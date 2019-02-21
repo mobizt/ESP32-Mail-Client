@@ -1,4 +1,11 @@
+
+
+
 //Required HTTPClientESP32Ex library, can be installed from https : //github.com/mobizt/HTTPClientESP32Ex
+
+//To use send Email for Gmail, less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
+
+//To receive Email for Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
 
 
 #include <Arduino.h>
