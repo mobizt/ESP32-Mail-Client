@@ -225,7 +225,7 @@ void readCallback(ReadStatus msg)
     }
     
     //To empty imapData object
-    imapData.empty();
+    //imapData.empty();
   }
 }
 
