@@ -28,9 +28,9 @@ Currently unable to connect to some SMTP/IMAP servers e.g. outlook.com due to so
 ## Dependencies
 Required HTTPClientESP32Ex library to be installed. https://github.com/mobizt/HTTPClientESP32Ex
 
-To use send Email for Gmail, less secure app option should enable. https://myaccount.google.com/lesssecureapps?pli=1
+To use send Email for Gmail, less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
 
-To receive Email for Gmail, IMAP option should enable. https://support.google.com/mail/answer/7126229?hl=en
+To receive Email for Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
 
 
 ## Supported functions
