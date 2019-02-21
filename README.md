@@ -18,11 +18,11 @@ This library works well in the following tested devices.
 
 Able to send Email with large file attachment.
 
-Able to receive Email and download message and attachments to SD card.
+Able to receive Emails, download and save messages and attachments to SD card.
 
-Support large file attachment send/receive.
+Support large file attachment to send Email or download from received Email.
 
-Able to fetch or search Email in receiving Email.
+Able to search Email using IMAP command as in RFC 3501 (depending on IMAP server implementation). Fetch is stricted to accept only message UID.
 
 ## Known Issues
 
