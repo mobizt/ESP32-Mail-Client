@@ -15,8 +15,8 @@
 //For demo only
 #include "image.h"
 
-#define WIFI_SSID YOUR_WIFI_SSID
-#define WIFI_PASSWORD YOUR_WIFI_PASSWORD
+#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
 //WiFi or HTTP client for internet connection
 HTTPClientESP32Ex http;
