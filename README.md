@@ -22,7 +22,9 @@ Able to receive Emails, download and save messages and attachments to SD card.
 
 Support large file attachment to send Email or download from received Email.
 
-Able to search Email using IMAP command as in RFC 3501 (depending on IMAP server implementation). Fetch is stricted to accept only message UID.
+Able to search Email using IMAP command as in RFC 3501 (depending on IMAP server implementation). 
+
+Fetch Email is stricted to accept only message UID.
 
 ## Known Issues
 
