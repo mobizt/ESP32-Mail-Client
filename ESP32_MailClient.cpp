@@ -3538,14 +3538,14 @@ void SMTPData::removeAttachFile(uint8_t index)
     }
 }
 
-void SMTPData::clearAttacData()
+void SMTPData::clearAttachData()
 {
   for (uint8_t i = 0; i < _attach.getCount(); i++)
     if (_attach.getType(i) == 0)
       _attach.remove(i);
 }
 
-void SMTPData::clearAttacFile()
+void SMTPData::clearAttachFile()
 {
   for (uint8_t i = 0; i < _attach.getCount(); i++)
     if (_attach.getType(i) == 1)
