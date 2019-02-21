@@ -132,9 +132,6 @@ void setup()
   //Begin fetch/receive Email
   MailClient.readMail(http, imapData);
 
-  //Empty imapData object
-  //imapData.empty();
-
 
 }
 
@@ -226,6 +223,9 @@ void readCallback(ReadStatus msg)
 
       Serial.println();
     }
+    
+    //To empty imapData object
+    imapData.empty();
   }
 }
 
