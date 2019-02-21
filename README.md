@@ -819,12 +819,12 @@ To receive Email for Gmail, IMAP option should be enabled. https://support.googl
     /*
     * Clear all attachment data from Email object.
     */
-    void clearAttacData();
+    void clearAttachData();
 
     /*
-       Clear all attachment file from Email object.
+    * Clear all attachment file from Email object.
     */
-    void clearAttacFile();
+    void clearAttachFile();
 
     /*
     * Clear all attachments (both data and file type attachments) from Email object.
