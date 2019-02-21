@@ -17,7 +17,11 @@ This library works well in the following tested devices.
 ## Features
 
 Able to send Email with large file attachment.
+
 Able to receive Email and download message and attachments to SD card.
+
+Support large file attachment send/receive.
+
 Able to fetch or search Email in receiving Email.
 
 ## Known Issues
