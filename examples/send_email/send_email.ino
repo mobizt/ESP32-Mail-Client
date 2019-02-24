@@ -99,7 +99,7 @@ void setup()
   smtpData.setLogin("smtp.gmail.com", 465, "YOUR_EMAIL_ACCOUNT@gmail.com", "YOUR_EMAIL_PASSWORD");
 
   //Set the sender name and Email
-  smtpData.setSender("ESP32", "info@vibrologic.com");
+  smtpData.setSender("ESP32", "SOME_EMAIL_ACCOUNT@SOME_EMAIL.com");
 
   //Set Email priority or importance High, Normal, Low or 1 to 5 (1 is highest)
   smtpData.setPriority("High");
