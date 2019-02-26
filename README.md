@@ -563,8 +563,11 @@ To receive Email using Gmail incoming Email service, IMAP option should be enabl
     */
     void empty();
 
+```
+    
+### SMTPData object call for sending Email.
 
-    ## SMTPData object call for sending Email
+```
 
     /*
     * Set login credentials to Email object
