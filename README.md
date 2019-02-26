@@ -35,7 +35,7 @@ Currently unable to connect to some SMTP/IMAP servers e.g. outlook.com due to so
 
 Required HTTPClientESP32Ex library to be installed. https://github.com/mobizt/HTTPClientESP32Ex
 
-## prerequisites
+## Prerequisites
 
 To send Email using Gmail outgoing Email service, less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
 
