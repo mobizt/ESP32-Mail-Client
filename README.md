@@ -79,13 +79,12 @@ To receive Email using Gmail incoming Email service, IMAP option should be enabl
     */
     String imapErrorReason();
     
-    ```
+  
+```
     
     ## IMAPData object call for receiving Email.
     
-    ```
-
-
+```
     /*
     *Set IMAP login credentials
     * 
