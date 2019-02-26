@@ -1,5 +1,5 @@
 /*
- * ESP32 Mail Client library for Arduino, version 1.0
+ * ESP32 Mail Client library for Arduino, version 1.0.1
  * 
  * This library provides ESP32 to send and receive email with or without attchament. 
  * 
