@@ -82,8 +82,8 @@ To receive Email using Gmail incoming Email service, IMAP option should be enabl
   
 ```
     
-## IMAPData object call for receiving Email.
-    
+    IMAPData object call for receiving Email.
+
 ```
     /*
     *Set IMAP login credentials
