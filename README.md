@@ -44,7 +44,7 @@ To receive Email using Gmail incoming Email service, IMAP option should be enabl
 
 ## Supported functions
 
-```c++
+```
     /*
     *
     * Send Email
@@ -78,8 +78,13 @@ To receive Email using Gmail incoming Email service, IMAP option should be enabl
     * \return error String.
     */
     String imapErrorReason();
-
+    
+    ```
+    
     ## IMAPData object call for receiving Email.
+    
+    ```
+
 
     /*
     *Set IMAP login credentials
