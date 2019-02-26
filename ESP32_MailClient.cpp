@@ -1,5 +1,5 @@
 /*
- * ESP32 Mail Client library for Arduino, version 1.0.0
+ * ESP32 Mail Client library for Arduino, version 1.0
  * 
  * This library provides ESP32 to send and receive email with or without attchament. 
  * 
@@ -61,8 +61,6 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
   std::string buf;
   std::string command = "$";
-  std::string infoMsg = "";
-  std::string statusMsg = "";
 
   size_t mailIndex = 0;
   int messageDataIndex = 0;
@@ -74,16 +72,18 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
   char _val[50];
   char _part[50];
 
+  ReadStatus cbData;
+
   if (imapData._readCallback)
   {
-    infoMsg.clear();
-    statusMsg.clear();
-    infoMsg = IMAP_MSG1;
-    statusMsg = IMAP_MSG2;
-    imapData._readCallback(ReadStatus(infoMsg.c_str(), statusMsg.c_str(), false));
+
+    cbData._info = STR_50;
+    cbData._status = STR_51;
+    cbData._success = false;
+    imapData._readCallback(cbData);
   }
 
-  http.http_begin(imapData._host.c_str(), imapData._port, IMAP_CMD75, (const char *)NULL);
+  http.http_begin(imapData._host.c_str(), imapData._port, STR_202, (const char *)NULL);
 
   if (!http.http_connect())
   {
@@ -91,12 +91,13 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
     if (imapData._readCallback)
     {
-      statusMsg.clear();
-      statusMsg = IMAP_MSG3;
-      imapData._readCallback(ReadStatus(FPSTR(IMAP_SMTP_MSG1) + imapErrorReason(), statusMsg.c_str(), false));
+
+      cbData._info = STR_53;
+      cbData._status = STR_52;
+      cbData._success = false;
+      imapData._readCallback(cbData);
     }
-    std::string().swap(infoMsg);
-    std::string().swap(statusMsg);
+    cbData.empty();
     return false;
   }
 
@@ -104,54 +105,51 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
   if (imapData._readCallback)
   {
-    infoMsg.clear();
-    infoMsg = IMAP_MSG5;
-    statusMsg.clear();
-    statusMsg = IMAP_MSG6;
-    imapData._readCallback(ReadStatus(infoMsg.c_str(), statusMsg.c_str(), false));
+    cbData._info = STR_54;
+    cbData._status = STR_55;
+    cbData._success = false;
+    imapData._readCallback(cbData);
   }
 
-  if (!waitIMAPResponse(http, imapData, 0))
+  if (!waitIMAPResponse(http, imapData, cbData, 0))
   {
     _imapStatus = IMAP_STATUS_IMAP_RESPONSE_FAILED;
 
     if (imapData._readCallback)
     {
-      statusMsg.clear();
-      statusMsg = IMAP_MSG3;
-      imapData._readCallback(ReadStatus(FPSTR(IMAP_SMTP_MSG1) + imapErrorReason(), statusMsg.c_str(), false));
+      cbData._info = STR_53;
+      cbData._status = STR_52;
+      cbData._success = false;
+      imapData._readCallback(cbData);
     }
-    std::string().swap(infoMsg);
-    std::string().swap(statusMsg);
+    cbData.empty();
     return false;
   }
 
   if (imapData._readCallback)
   {
-    infoMsg.clear();
-    infoMsg = IMAP_MSG4;
-    statusMsg.clear();
-    statusMsg = IMAP_MSG7;
-    imapData._readCallback(ReadStatus(infoMsg.c_str(), statusMsg.c_str(), false));
+    cbData._info = STR_56;
+    cbData._status = STR_57;
+    cbData._success = false;
+    imapData._readCallback(cbData);
   }
 
-  tcp->print(IMAP_CMD1);
+  tcp->print(STR_130);
   tcp->print(imapData._loginEmail.c_str());
-  tcp->print(IMAP_CMD2);
+  tcp->print(STR_131);
   tcp->println(imapData._loginPassword.c_str());
 
-  if (!waitIMAPResponse(http, imapData, IMAP_COMMAND_TYPE::LOGIN, IMAP_CMD3))
+  if (!waitIMAPResponse(http, imapData, cbData, IMAP_COMMAND_TYPE::LOGIN, STR_132))
   {
     _imapStatus = IMAP_STATUS_LOGIN_FAILED;
     if (imapData._readCallback)
     {
-      statusMsg.clear();
-      statusMsg = IMAP_MSG3;
-      imapData._readCallback(ReadStatus(FPSTR(IMAP_SMTP_MSG1) + imapErrorReason(), statusMsg.c_str(), false));
+      cbData._info = STR_53;
+      cbData._status = STR_52;
+      cbData._success = false;
+      imapData._readCallback(cbData);
     }
-    std::string().swap(infoMsg);
-    std::string().swap(statusMsg);
-
+    cbData.empty();
     return false;
   }
 
@@ -160,63 +158,65 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
     if (imapData._readCallback)
     {
-      infoMsg.clear();
-      infoMsg = IMAP_MSG8;
-      statusMsg.clear();
-      statusMsg = IMAP_MSG9;
-      imapData._readCallback(ReadStatus(infoMsg.c_str(), statusMsg.c_str(), false));
+      cbData._info = STR_58;
+      cbData._status = STR_59;
+      cbData._success = false;
+      imapData._readCallback(cbData);
     }
 
-    tcp->println(IMAP_CMD4);
+    tcp->println(STR_133);
 
-    if (!waitIMAPResponse(http, imapData, IMAP_COMMAND_TYPE::LIST, IMAP_CMD3, IMAP_CMD5))
+    if (!waitIMAPResponse(http, imapData, cbData, IMAP_COMMAND_TYPE::LIST, STR_132, STR_134))
     {
       _imapStatus = IMAP_STATUS_BAD_COMMAND;
       if (imapData._readCallback)
       {
-        statusMsg.clear();
-        statusMsg = IMAP_MSG3;
-        imapData._readCallback(ReadStatus(FPSTR(IMAP_SMTP_MSG1) + imapErrorReason(), statusMsg.c_str(), false));
+        cbData._info = STR_53;
+        cbData._status = STR_52;
+        cbData._success = false;
+        imapData._readCallback(cbData);
       }
-      std::string().swap(infoMsg);
-      std::string().swap(statusMsg);
-      return false;
+      cbData.empty();
     }
 
     if (imapData._readCallback)
     {
-      infoMsg.clear();
-      infoMsg = IMAP_MSG10;
-      statusMsg.clear();
-      imapData._readCallback(ReadStatus(infoMsg.c_str(), statusMsg.c_str(), false));
+
+      cbData._info = STR_60;
+      cbData._success = false;
+      imapData._readCallback(cbData);
 
       for (size_t i = 0; i < imapData._folders.size(); i++)
-        imapData._readCallback(ReadStatus(imapData._folders[i].c_str(), "", false));
+      {
+        cbData._info = imapData._folders[i];
+        cbData._status = "";
+        cbData._success = false;
+        imapData._readCallback(cbData);
+      }
 
-      infoMsg.clear();
-      infoMsg = IMAP_MSG11;
-      infoMsg += imapData._currentFolder;
-      infoMsg += IMAP_MSG48;
-      imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
+      cbData._info = STR_61 + imapData._currentFolder + STR_97;
+      cbData._status = "";
+      cbData._success = false;
+      imapData._readCallback(cbData);
     }
   }
 
-  tcp->print(IMAP_CMD6);
+  tcp->print(STR_135);
   tcp->print(imapData._currentFolder.c_str());
-  tcp->println(IMAP_CMD7);
+  tcp->println(STR_136);
 
-  if (!waitIMAPResponse(http, imapData, IMAP_COMMAND_TYPE::EXAMINE, IMAP_CMD3, IMAP_CMD5))
+  if (!waitIMAPResponse(http, imapData, cbData, IMAP_COMMAND_TYPE::EXAMINE, STR_132, STR_134))
   {
 
     _imapStatus = IMAP_STATUS_BAD_COMMAND;
     if (imapData._readCallback)
     {
-      statusMsg.clear();
-      statusMsg = IMAP_MSG3;
-      imapData._readCallback(ReadStatus(FPSTR(IMAP_SMTP_MSG1) + imapErrorReason(), statusMsg.c_str(), false));
+      cbData._info = STR_53;
+      cbData._status = STR_52;
+      cbData._success = false;
+      imapData._readCallback(cbData);
     }
-    std::string().swap(infoMsg);
-    std::string().swap(statusMsg);
+    cbData.empty();
     return false;
   }
 
@@ -226,32 +226,41 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     if (imapData._readCallback)
     {
 
-      infoMsg.clear();
-      infoMsg = IMAP_MSG12;
-      infoMsg += imapData._nextUID;
-      imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
+      cbData._info = STR_62 + imapData._nextUID;
+      cbData._status = "";
+      cbData._success = false;
+      imapData._readCallback(cbData);
 
-      infoMsg.clear();
-      infoMsg = IMAP_MSG13;
-      infoMsg += String(imapData._totalMessage).c_str();
-      imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
+      cbData._info = STR_63;
+      memset(_val, 0, sizeof _val);
+      itoa(imapData._totalMessage, _val, 10);
+      cbData._info += _val;
+      cbData._status = "";
+      cbData._success = false;
+      imapData._readCallback(cbData);
 
-      infoMsg.clear();
-      infoMsg = IMAP_MSG14;
-      imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
+      cbData._info = STR_64;
+      cbData._status = "";
+      cbData._success = false;
+      imapData._readCallback(cbData);
 
       for (size_t i = 0; i < imapData._flag.size(); i++)
-        imapData._readCallback(ReadStatus(imapData._flag[i].c_str(), "", false));
+      {
+        cbData._info = imapData._flag[i];
+        cbData._status = "";
+        cbData._success = false;
+        imapData._readCallback(cbData);
+      }
 
-      infoMsg.clear();
-      infoMsg = IMAP_MSG15;
-      imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
+      cbData._info = STR_65;
+      cbData._status = "";
+      cbData._success = false;
+      imapData._readCallback(cbData);
 
-      infoMsg.clear();
-      infoMsg = IMAP_MSG16;
-      statusMsg.clear();
-      statusMsg = IMAP_MSG17;
-      imapData._readCallback(ReadStatus(infoMsg.c_str(), statusMsg.c_str(), false));
+      cbData._info = STR_66;
+      cbData._status = STR_67;
+      cbData._success = false;
+      imapData._readCallback(cbData);
     }
   }
 
@@ -267,12 +276,12 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     if (imapData._searchCriteria != "")
     {
 
-      if (imapData._searchCriteria.find(IMAP_CMD8) != std::string::npos)
+      if (imapData._searchCriteria.find(STR_137) != std::string::npos)
       {
         imapData._uidSearch = true;
-        command += IMAP_CMD9;
+        command += STR_138;
       }
-      command += IMAP_CMD10;
+      command += STR_139;
 
       for (size_t i = 0; i < imapData._searchCriteria.length(); i++)
       {
@@ -281,12 +290,12 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
         if (imapData._searchCriteria[i] == ' ')
         {
-          if (imapData._uidSearch && buf == IMAP_CMD11)
+          if (imapData._uidSearch && buf == STR_140)
             buf.clear();
 
-          if (buf != IMAP_CMD12 && buf != "")
+          if (buf != STR_141 && buf != "")
           {
-            command += IMAP_CMD2;
+            command += STR_131;
             command += buf;
           }
 
@@ -296,7 +305,7 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
       if (buf.length() > 0)
       {
-        command += IMAP_CMD2;
+        command += STR_131;
         command += buf;
       }
 
@@ -304,58 +313,73 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
       std::string().swap(command);
 
-      if (!waitIMAPResponse(http, imapData, IMAP_COMMAND_TYPE::SEARCH, IMAP_CMD3, IMAP_CMD5, 1))
+      if (!waitIMAPResponse(http, imapData, cbData, IMAP_COMMAND_TYPE::SEARCH, STR_132, STR_134, 1))
       {
         _imapStatus = IMAP_STATUS_BAD_COMMAND;
         if (imapData._readCallback)
         {
-          statusMsg.clear();
-          statusMsg = IMAP_MSG3;
-          imapData._readCallback(ReadStatus(FPSTR(IMAP_SMTP_MSG1) + imapErrorReason(), statusMsg.c_str(), false));
+          cbData._info = STR_53;
+          cbData._status = STR_52;
+          cbData._success = false;
+          imapData._readCallback(cbData);
         }
-        std::string().swap(infoMsg);
-        std::string().swap(statusMsg);
+        cbData.empty();
         return false;
       }
 
       if (imapData._readCallback)
       {
-        infoMsg.clear();
-        infoMsg = IMAP_MSG18;
-        infoMsg += String(imapData._emailNumMax).c_str();
-        imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
+
+        cbData._info = STR_68;
+        memset(_val, 0, sizeof _val);
+        itoa(imapData._emailNumMax, _val, 10);
+        cbData._info += _val;
+        cbData._status = "";
+        cbData._success = false;
+        imapData._readCallback(cbData);
 
         if (imapData._msgNum.size() > 0)
         {
-          infoMsg.clear();
-          infoMsg = IMAP_MSG19;
-          infoMsg += String(imapData._searchCount).c_str();
-          infoMsg += IMAP_MSG20;
-          imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
 
-          infoMsg.clear();
-          infoMsg = IMAP_MSG21;
-          infoMsg += String(imapData._msgNum.size()).c_str();
-          infoMsg += IMAP_MSG20;
-          imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
+          cbData._info = STR_69;
+          memset(_val, 0, sizeof _val);
+          itoa(imapData._searchCount, _val, 10);
+          cbData._info += _val;
+          cbData._info += STR_70;
+          cbData._status = "";
+          cbData._success = false;
+          imapData._readCallback(cbData);
+
+          cbData._info = STR_71;
+          memset(_val, 0, sizeof _val);
+          itoa(imapData._msgNum.size(), _val, 10);
+          cbData._info += _val;
+          cbData._info += STR_70;
+          cbData._status = "";
+          cbData._success = false;
+          imapData._readCallback(cbData);
         }
         else
         {
-          infoMsg.clear();
-          infoMsg = IMAP_MSG23;
-          imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
+          cbData._info = STR_72;
+          cbData._status = "";
+          cbData._success = false;
+          imapData._readCallback(cbData);
         }
       }
     }
     else
     {
+      memset(_val, 0, sizeof _val);
+      itoa(imapData._totalMessage, _val, 10);
 
-      imapData._msgNum.push_back(String(imapData._totalMessage).c_str());
+      imapData._msgNum.push_back(_val);
       if (imapData._readCallback)
       {
-        infoMsg.clear();
-        infoMsg = IMAP_MSG24;
-        imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
+        cbData._info = STR_73;
+        cbData._status = "";
+        cbData._success = false;
+        imapData._readCallback(cbData);
       }
     }
   }
@@ -370,20 +394,22 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
     if (imapData._readCallback)
     {
-      infoMsg.clear();
-      infoMsg = IMAP_MSG25;
+
+      cbData._info = STR_74;
       memset(_val, 0, sizeof _val);
       itoa(i + 1, _val, 10);
-      infoMsg += _val;
-      if (imapData._uidSearch || imapData._fetchUID != "")
-        infoMsg += IMAP_MSG26;
-      else
-        infoMsg += IMAP_MSG27;
+      cbData._info += _val;
 
-      infoMsg += imapData._msgNum[i];
-      statusMsg.clear();
-      statusMsg = IMAP_MSG28;
-      imapData._readCallback(ReadStatus(infoMsg.c_str(), statusMsg.c_str(), false));
+      cbData._status = "";
+      if (imapData._uidSearch || imapData._fetchUID != "")
+        cbData._info += STR_75;
+      else
+        cbData._info += STR_76;
+
+      cbData._info += imapData._msgNum[i];
+      cbData._status = STR_77;
+      cbData._success = false;
+      imapData._readCallback(cbData);
     }
 
     imapData._date.push_back(std::string());
@@ -410,14 +436,14 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     imapData._messageDataInfo.push_back(d);
 
     if (imapData._uidSearch || imapData._fetchUID != "")
-      tcp->print(IMAP_CMD13);
+      tcp->print(STR_142);
     else
-      tcp->print(IMAP_CMD14);
+      tcp->print(STR_143);
 
     tcp->print(imapData._msgNum[i].c_str());
-    tcp->println(IMAP_CMD15);
+    tcp->println(STR_144);
 
-    if (!waitIMAPResponse(http, imapData, IMAP_COMMAND_TYPE::FETCH_BODY_HEADER, IMAP_CMD16, "", 0, mailIndex))
+    if (!waitIMAPResponse(http, imapData, cbData, IMAP_COMMAND_TYPE::FETCH_BODY_HEADER, STR_145, "", 0, mailIndex))
     {
       if (imapData._fetchUID == "")
         _imapStatus = IMAP_STATUS_IMAP_RESPONSE_FAILED;
@@ -426,12 +452,12 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
       if (imapData._readCallback)
       {
-        statusMsg.clear();
-        statusMsg = IMAP_MSG3;
-        imapData._readCallback(ReadStatus(FPSTR(IMAP_SMTP_MSG1) + imapErrorReason(), statusMsg.c_str(), false));
+        cbData._info = STR_53;
+        cbData._status = STR_52;
+        cbData._success = false;
+        imapData._readCallback(cbData);
       }
-      std::string().swap(infoMsg);
-      std::string().swap(statusMsg);
+      cbData.empty();
       std::string().swap(command);
       return false;
     }
@@ -449,21 +475,21 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
       {
 
         if (imapData._uidSearch || imapData._fetchUID != "")
-          tcp->print(IMAP_CMD13);
+          tcp->print(STR_142);
         else
-          tcp->print(IMAP_CMD14);
+          tcp->print(STR_143);
 
         tcp->print(imapData._msgNum[i].c_str());
-        tcp->print(IMAP_CMD19);
+        tcp->print(STR_147);
         tcp->print(partID);
-        tcp->println(IMAP_CMD20);
+        tcp->println(STR_148);
 
         memset(_part, 0, sizeof _part);
         memset(_val, 0, sizeof _val);
         itoa(partID, _val, 10);
         strcpy(_part, _val);
 
-        res = waitIMAPResponse(http, imapData, IMAP_COMMAND_TYPE::FETCH_BODY_MIME, "", "", 0, mailIndex, messageDataIndex, _part);
+        res = waitIMAPResponse(http, imapData, cbData, IMAP_COMMAND_TYPE::FETCH_BODY_MIME, "", "", 0, mailIndex, messageDataIndex, _part);
         if (res)
         {
           if (imapData._messageDataCount[mailIndex] < messageDataIndex + 1)
@@ -475,22 +501,22 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
           if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == "")
             continue;
 
-          if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType.find(IMAP_CMD21) != std::string::npos)
+          if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType.find(STR_149) != std::string::npos)
           {
             do
             {
 
               if (imapData._uidSearch || imapData._fetchUID != "")
-                tcp->print(IMAP_CMD13);
+                tcp->print(STR_142);
               else
-                tcp->print(IMAP_CMD14);
+                tcp->print(STR_143);
 
               tcp->print(imapData._msgNum[i].c_str());
-              tcp->print(IMAP_CMD19);
+              tcp->print(STR_147);
               tcp->print(partID);
               tcp->print(".");
               tcp->print(_partID);
-              tcp->println(IMAP_CMD20);
+              tcp->println(STR_148);
 
               memset(_part, 0, 20);
               memset(_val, 0, 20);
@@ -501,7 +527,7 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
               itoa(_partID, _val, 10);
               strcat(_part, _val);
 
-              _res = waitIMAPResponse(http, imapData, IMAP_COMMAND_TYPE::FETCH_BODY_MIME, "", "", 0, mailIndex, messageDataIndex, _part);
+              _res = waitIMAPResponse(http, imapData, cbData, IMAP_COMMAND_TYPE::FETCH_BODY_MIME, "", "", 0, mailIndex, messageDataIndex, _part);
 
               if (_res)
               {
@@ -538,34 +564,38 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
       {
         if (imapData._attachmentCount[mailIndex] > 0 && imapData._readCallback)
         {
-          infoMsg.clear();
-          infoMsg = IMAP_MSG29;
-          infoMsg += String(imapData._attachmentCount[mailIndex]).c_str();
-          infoMsg += IMAP_MSG30;
-          imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
+          cbData._info = STR_78;
+          memset(_val, 0, sizeof _val);
+          itoa(imapData._attachmentCount[mailIndex], _val, 10);
+          cbData._info += _val;
+          cbData._info += STR_79;
+          cbData._status = "";
+          cbData._success = false;
+          imapData._readCallback(cbData);
 
           for (int j = 0; j < imapData._messageDataInfo[mailIndex].size(); j++)
           {
-            if (imapData._messageDataInfo[mailIndex][j]._disposition == IMAP_CMD25)
+            if (imapData._messageDataInfo[mailIndex][j]._disposition == STR_153)
             {
-              infoMsg.clear();
-              infoMsg = imapData._messageDataInfo[mailIndex][j]._filename;
-              infoMsg += IMAP_MSG34;
+
+              cbData._info = imapData._messageDataInfo[mailIndex][j]._filename;
+              cbData._info += STR_83;
               memset(_val, 0, sizeof _val);
               itoa(imapData._messageDataInfo[mailIndex][j]._size, _val, 10);
-              infoMsg += _val;
-              infoMsg += IMAP_MSG33;
-              imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
+              cbData._info += _val;
+              cbData._info += STR_82;
+              cbData._status = "";
+              cbData._success = false;
+              imapData._readCallback(cbData);
             }
           }
 
           if (imapData._downloadAttachment && _sdOk)
           {
-            infoMsg.clear();
-            infoMsg = IMAP_MSG31;
-            statusMsg.clear();
-            statusMsg = IMAP_MSG32;
-            imapData._readCallback(ReadStatus(infoMsg.c_str(), statusMsg.c_str(), false));
+            cbData._info = STR_80;
+            cbData._status = STR_81;
+            cbData._success = false;
+            imapData._readCallback(cbData);
           }
         }
 
@@ -575,34 +605,35 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
           if (imapData._messageDataInfo[mailIndex][j]._disposition == "")
           {
 
-            if (!imapData._textFormat && imapData._messageDataInfo[mailIndex][j]._contentType != IMAP_CMD26)
+            if (!imapData._textFormat && imapData._messageDataInfo[mailIndex][j]._contentType != STR_154)
               continue;
 
-            if (!imapData._htmlFormat && imapData._messageDataInfo[mailIndex][j]._contentType != IMAP_CMD27)
+            if (!imapData._htmlFormat && imapData._messageDataInfo[mailIndex][j]._contentType != STR_155)
               continue;
 
             if (imapData._uidSearch || imapData._fetchUID != "")
-              tcp->print(IMAP_CMD13);
+              tcp->print(STR_142);
             else
-              tcp->print(IMAP_CMD14);
+              tcp->print(STR_143);
 
             tcp->print(imapData._msgNum[i].c_str());
-            tcp->print(IMAP_CMD19);
+            tcp->print(STR_147);
             tcp->print(imapData._messageDataInfo[mailIndex][j]._part.c_str());
-            tcp->println(IMAP_CMD28);
+            tcp->println(STR_156);
 
-            if (!waitIMAPResponse(http, imapData, IMAP_COMMAND_TYPE::FETCH_BODY_TEXT, IMAP_CMD16, "", imapData._message_buffer_size, mailIndex, j))
+            if (!waitIMAPResponse(http, imapData, cbData, IMAP_COMMAND_TYPE::FETCH_BODY_TEXT, STR_145, "", imapData._message_buffer_size, mailIndex, j))
             {
               _imapStatus = IMAP_STATUS_IMAP_RESPONSE_FAILED;
               if (imapData._readCallback)
               {
-                statusMsg.clear();
-                statusMsg = IMAP_MSG3;
-                imapData._readCallback(ReadStatus(FPSTR(IMAP_SMTP_MSG1) + imapErrorReason(), statusMsg.c_str(), false));
+                cbData._info = STR_53;
+                cbData._status = STR_52;
+                cbData._success = false;
+                imapData._readCallback(cbData);
               }
             }
           }
-          else if (imapData._messageDataInfo[mailIndex][j]._disposition == IMAP_CMD25 && _sdOk)
+          else if (imapData._messageDataInfo[mailIndex][j]._disposition == STR_153 && _sdOk)
           {
 
             if (imapData._downloadAttachment)
@@ -618,23 +649,24 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
                       imapData._downloadedByte[mailIndex] += imapData._messageDataInfo[mailIndex][j + 1]._size;
 
                   if (imapData._uidSearch || imapData._fetchUID != "")
-                    tcp->print(IMAP_CMD13);
+                    tcp->print(STR_142);
                   else
-                    tcp->print(IMAP_CMD14);
+                    tcp->print(STR_143);
 
                   tcp->print(imapData._msgNum[i].c_str());
-                  tcp->print(IMAP_CMD19);
+                  tcp->print(STR_147);
                   tcp->print(imapData._messageDataInfo[mailIndex][j]._part.c_str());
-                  tcp->println(IMAP_CMD28);
+                  tcp->println(STR_156);
 
-                  if (!waitIMAPResponse(http, imapData, IMAP_COMMAND_TYPE::FETCH_BODY_ATTACHMENT, IMAP_CMD16, "", imapData._message_buffer_size, mailIndex, j))
+                  if (!waitIMAPResponse(http, imapData, cbData, IMAP_COMMAND_TYPE::FETCH_BODY_ATTACHMENT, STR_145, "", imapData._message_buffer_size, mailIndex, j))
                   {
                     _imapStatus = IMAP_STATUS_IMAP_RESPONSE_FAILED;
                     if (imapData._readCallback)
                     {
-                      statusMsg.clear();
-                      statusMsg = IMAP_MSG3;
-                      imapData._readCallback(ReadStatus(FPSTR(IMAP_SMTP_MSG1) + imapErrorReason(), statusMsg.c_str(), false));
+                      cbData._info = STR_53;
+                      cbData._status = STR_52;
+                      cbData._success = false;
+                      imapData._readCallback(cbData);
                     }
                   }
 
@@ -659,12 +691,14 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
     if (imapData._readCallback)
     {
-      infoMsg.clear();
-      infoMsg = IMAP_MSG35;
+
+      cbData._info = STR_84;
       memset(_val, 0, sizeof _val);
       itoa(ESP.getFreeHeap(), _val, 10);
-      infoMsg += _val;
-      imapData._readCallback(ReadStatus(infoMsg.c_str(), "", false));
+      cbData._info += _val;
+      cbData._status = "";
+      cbData._success = false;
+      imapData._readCallback(cbData);
     }
 
     mailIndex++;
@@ -673,40 +707,37 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
   if (imapData._readCallback)
   {
 
-    infoMsg.clear();
-    infoMsg = IMAP_MSG36;
-    statusMsg.clear();
-    statusMsg = IMAP_MSG37;
-    imapData._readCallback(ReadStatus(infoMsg.c_str(), statusMsg.c_str(), false));
+    cbData._info = STR_85;
+    cbData._status = STR_86;
+    cbData._success = false;
+    imapData._readCallback(cbData);
   }
 
-  tcp->println(IMAP_CMD17);
-  if (!waitIMAPResponse(http, imapData, 0))
+  tcp->println(STR_146);
+  if (!waitIMAPResponse(http, imapData, cbData, 0))
   {
     _imapStatus = IMAP_STATUS_BAD_COMMAND;
     if (imapData._readCallback)
     {
-      statusMsg.clear();
-      statusMsg = IMAP_MSG3;
-      imapData._readCallback(ReadStatus(FPSTR(IMAP_SMTP_MSG1) + imapErrorReason(), statusMsg.c_str(), false));
+      cbData._info = STR_53;
+      cbData._status = STR_52;
+      cbData._success = false;
+      imapData._readCallback(cbData);
     }
-    std::string().swap(infoMsg);
-    std::string().swap(statusMsg);
+    cbData.empty();
     return false;
   }
 
   if (imapData._readCallback)
   {
 
-    infoMsg.clear();
-    infoMsg = IMAP_MSG49;
-    statusMsg.clear();
-    statusMsg = IMAP_MSG47;
-    imapData._readCallback(ReadStatus(infoMsg.c_str(), statusMsg.c_str(), true));
+    cbData._info = STR_98;
+    cbData._status = STR_96;
+    cbData._success = true;
+    imapData._readCallback(cbData);
   }
+  cbData.empty();
 
-  std::string().swap(infoMsg);
-  std::string().swap(statusMsg);
   return true;
 }
 
@@ -715,7 +746,7 @@ bool ESP32_MailClient::sdTest()
 
   SD.begin();
 
-  File file = SD.open("/esp.32", FILE_WRITE);
+  File file = SD.open(STR_204, FILE_WRITE);
   if (!file)
     return false;
 
@@ -723,7 +754,7 @@ bool ESP32_MailClient::sdTest()
     return false;
   file.close();
 
-  file = SD.open("/esp.32");
+  file = SD.open(STR_204);
   if (!file)
     return false;
 
@@ -734,7 +765,7 @@ bool ESP32_MailClient::sdTest()
   }
   file.close();
 
-  SD.remove("/esp.32");
+  SD.remove(STR_204);
 
   return true;
 }
@@ -742,24 +773,37 @@ bool ESP32_MailClient::sdTest()
 bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
 {
   _smtpStatus = 0;
-  string buf;
-  string buf2;
+  std::string buf;
+  std::string buf2;
+  char _val[50];
+  SendStatus cbData;
+  cbData._info = STR_120;
+  cbData._success = false;
 
   if (smtpData._sendCallback)
-    smtpData._sendCallback(SendStatus(FPSTR(SMTP_MSG1), false));
+    smtpData._sendCallback(cbData);
 
-  http.http_begin(smtpData._host.c_str(), smtpData._port, IMAP_CMD75, (const char *)NULL);
+  http.http_begin(smtpData._host.c_str(), smtpData._port, STR_202, (const char *)NULL);
 
   if (!http.http_connect())
   {
     _smtpStatus = SMTP_STATUS_SERVER_CONNECT_FAILED;
     if (smtpData._sendCallback)
-      smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+    {
+      cbData._info = STR_53 + smtpErrorReasonStr();
+      cbData._success = false;
+      smtpData._sendCallback(cbData);
+    }
+    cbData.empty();
     return false;
   }
 
   if (smtpData._sendCallback)
-    smtpData._sendCallback(SendStatus(FPSTR(SMTP_MSG2), false));
+  {
+    cbData._info = STR_121;
+    cbData._success = false;
+    smtpData._sendCallback(cbData);
+  }
 
   WiFiClient *tcp = http.http_getStreamPtr();
 
@@ -767,51 +811,87 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   {
     _smtpStatus = SMTP_STATUS_SMTP_RESPONSE_FAILED;
     if (smtpData._sendCallback)
-      smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+    {
+      cbData._info = STR_53 + smtpErrorReasonStr();
+      cbData._success = false;
+      smtpData._sendCallback(cbData);
+    }
+    cbData.empty();
     return false;
   }
 
   if (smtpData._sendCallback)
-    smtpData._sendCallback(SendStatus(FPSTR(SMTP_MSG3), false));
+  {
+    cbData._info = STR_122;
+    cbData._success = false;
+    smtpData._sendCallback(cbData);
+  }
 
-  tcp->println(FPSTR(HELLO));
+  tcp->println(STR_5);
 
   if (waitSMTPResponse(http) != 250)
   {
     _smtpStatus = SMTP_STATUS_IDENTIFICATION_FAILED;
     if (smtpData._sendCallback)
-      smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+    {
+      cbData._info = STR_53 + smtpErrorReasonStr();
+      cbData._success = false;
+      smtpData._sendCallback(cbData);
+    }
+    cbData.empty();
     return false;
   }
 
   if (smtpData._sendCallback)
-    smtpData._sendCallback(SendStatus(FPSTR(SMTP_MSG3), false));
+  {
+    cbData._info = STR_122;
+    cbData._success = false;
+    smtpData._sendCallback(cbData);
+  }
 
-  tcp->println(FPSTR(EHLO));
+  tcp->println(STR_6);
 
   if (waitSMTPResponse(http) != 250)
   {
     _smtpStatus = SMTP_STATUS_AUTHEN_NOT_SUPPORT;
     if (smtpData._sendCallback)
-      smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+    {
+      cbData._info = STR_53 + smtpErrorReasonStr();
+      cbData._success = false;
+      smtpData._sendCallback(cbData);
+    }
+    cbData.empty();
     return false;
   }
 
   if (smtpData._sendCallback)
-    smtpData._sendCallback(SendStatus(FPSTR(SMTP_MSG4), false));
+  {
+    cbData._info = STR_123;
+    cbData._success = false;
+    smtpData._sendCallback(cbData);
+  }
 
-  tcp->println(FPSTR(AUTH_LOGIN));
+  tcp->println(STR_4);
 
   if (waitSMTPResponse(http) != 334)
   {
     _smtpStatus = SMTP_STATUS_AUTHEN_FAILED;
     if (smtpData._sendCallback)
-      smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+    {
+      cbData._info = STR_53 + smtpErrorReasonStr();
+      cbData._success = false;
+      smtpData._sendCallback(cbData);
+    }
+    cbData.empty();
     return false;
   }
 
   if (smtpData._sendCallback)
-    smtpData._sendCallback(SendStatus(FPSTR(SMTP_MSG5), false));
+  {
+    cbData._info = STR_124;
+    cbData._success = false;
+    smtpData._sendCallback(cbData);
+  }
 
   tcp->println(base64_encode_string((const unsigned char *)smtpData._loginEmail.c_str(), smtpData._loginEmail.length()).c_str());
 
@@ -819,7 +899,12 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   {
     _smtpStatus = SMTP_STATUS_USER_LOGIN_FAILED;
     if (smtpData._sendCallback)
-      smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+    {
+      cbData._info = STR_53 + smtpErrorReasonStr();
+      cbData._success = false;
+      smtpData._sendCallback(cbData);
+    }
+    cbData.empty();
     return false;
   }
 
@@ -829,57 +914,74 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   {
     _smtpStatus = SMTP_STATUS_PASSWORD_LOGIN_FAILED;
     if (smtpData._sendCallback)
-      smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+    {
+      cbData._info = STR_53 + smtpErrorReasonStr();
+      cbData._success = false;
+      smtpData._sendCallback(cbData);
+    }
+    cbData.empty();
     return false;
   }
 
   if (smtpData._sendCallback)
-    smtpData._sendCallback(SendStatus(FPSTR(SMTP_MSG6), false));
+  {
+    cbData._info = STR_125;
+    cbData._success = false;
+    smtpData._sendCallback(cbData);
+  }
 
   if (smtpData._priority > 0 && smtpData._priority <= 5)
   {
-    buf2 += FPSTR(PRIORITY);
-    buf2 += String(smtpData._priority).c_str();
-    buf2 += FPSTR(NEWLINE);
+    memset(_val, 0, sizeof _val);
+    itoa(smtpData._priority, _val, 10);
+
+    buf2 += STR_17;
+    buf2 += _val;
+    buf2 += STR_34;
 
     if (smtpData._priority == 1)
     {
-      buf2 += FPSTR(PRIORITY_MS_HIGH);
-      buf2 += FPSTR(IMPORTANCE_HIGH);
+      buf2 += STR_18;
+      buf2 += STR_21;
     }
     else if (smtpData._priority == 3)
     {
-      buf2 += FPSTR(PRIORITY_MS_NORMAL);
-      buf2 += FPSTR(IMPORTANCE_NORMAL);
+      buf2 += STR_19;
+      buf2 += STR_22;
     }
     else if (smtpData._priority == 5)
     {
-      buf2 += FPSTR(PRIORITY_MS_LOW);
-      buf2 += FPSTR(IMPORTANCE_LOW);
+      buf2 += STR_20;
+      buf2 += STR_23;
     }
   }
 
-  buf2 += FPSTR(FROM);
+  buf2 += STR_10;
 
   if (smtpData._fromName.length() > 0)
     buf2 += smtpData._fromName;
 
-  buf2 += FPSTR(OPEN_TAG);
+  buf2 += STR_14;
   buf2 += smtpData._senderEmail;
-  buf2 += FPSTR(CLOSE_TAG);
-  buf2 += FPSTR(NEWLINE);
+  buf2 += STR_15;
+  buf2 += STR_34;
 
-  buf += FPSTR(MAIL_FROM);
-  buf += FPSTR(OPEN_TAG);
+  buf += STR_8;
+  buf += STR_14;
   buf += smtpData._senderEmail;
-  buf += FPSTR(CLOSE_TAG);
+  buf += STR_15;
   tcp->println(buf.c_str());
 
   if (waitSMTPResponse(http) != 250)
   {
     _smtpStatus = SMTP_STATUS_SEND_HEADER_FAILED;
     if (smtpData._sendCallback)
-      smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+    {
+      cbData._info = STR_53 + smtpErrorReasonStr();
+      cbData._success = false;
+      smtpData._sendCallback(cbData);
+    }
+    cbData.empty();
     return false;
   }
 
@@ -888,27 +990,27 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
 
     if (i == 0)
     {
-      buf2 += FPSTR(TO);
-      buf2 += FPSTR(OPEN_TAG);
+      buf2 += STR_11;
+      buf2 += STR_14;
       buf2 += smtpData._recipient[i];
-      buf2 += FPSTR(CLOSE_TAG);
+      buf2 += STR_15;
     }
     else
     {
-      buf2 += FPSTR(COMMA_OPEN_TAG);
+      buf2 += STR_13;
       buf2 += smtpData._recipient[i];
-      buf2 += FPSTR(CLOSE_TAG);
+      buf2 += STR_15;
     }
 
     if (i == smtpData._recipient.size() - 1)
-      buf2 += FPSTR(NEWLINE);
+      buf2 += STR_34;
 
     buf.clear();
 
-    buf += FPSTR(MAIL_RECIP_TO);
-    buf += FPSTR(OPEN_TAG);
+    buf += STR_9;
+    buf += STR_14;
     buf += smtpData._recipient[i];
-    buf += FPSTR(CLOSE_TAG);
+    buf += STR_15;
 
     tcp->println(buf.c_str());
 
@@ -916,7 +1018,12 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
     {
       _smtpStatus = SMTP_STATUS_SEND_HEADER_FAILED;
       if (smtpData._sendCallback)
-        smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+      {
+        cbData._info = STR_53 + smtpErrorReasonStr();
+        cbData._success = false;
+        smtpData._sendCallback(cbData);
+      }
+      cbData.empty();
       return false;
     }
   }
@@ -926,34 +1033,39 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
 
     if (i == 0)
     {
-      buf2 += FPSTR(CC);
-      buf2 += FPSTR(OPEN_TAG);
+      buf2 += STR_12;
+      buf2 += STR_14;
       buf2 += smtpData._cc[i];
-      buf2 += FPSTR(CLOSE_TAG);
+      buf2 += STR_15;
     }
     else
     {
-      buf2 += FPSTR(COMMA_OPEN_TAG);
+      buf2 += STR_13;
       buf2 += smtpData._cc[i];
-      buf2 += FPSTR(CLOSE_TAG);
+      buf2 += STR_15;
     }
 
     if (i == smtpData.ccCount() - 1)
-      buf2 += FPSTR(NEWLINE);
+      buf2 += STR_34;
 
     buf.clear();
 
-    buf += FPSTR(MAIL_RECIP_TO);
-    buf += FPSTR(OPEN_TAG);
+    buf += STR_9;
+    buf += STR_14;
     buf += smtpData._cc[i];
-    buf += FPSTR(CLOSE_TAG);
+    buf += STR_15;
     tcp->println(buf.c_str());
 
     if (waitSMTPResponse(http) != 250)
     {
       _smtpStatus = SMTP_STATUS_SEND_HEADER_FAILED;
       if (smtpData._sendCallback)
-        smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+      {
+        cbData._info = STR_53 + smtpErrorReasonStr();
+        cbData._success = false;
+        smtpData._sendCallback(cbData);
+      }
+      cbData.empty();
       return false;
     }
   }
@@ -962,42 +1074,56 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   {
 
     buf.clear();
-    buf += FPSTR(MAIL_RECIP_TO);
-    buf += FPSTR(OPEN_TAG);
+    buf += STR_9;
+    buf += STR_14;
     buf += smtpData._bcc[i];
-    buf += FPSTR(CLOSE_TAG);
+    buf += STR_15;
     tcp->println(buf.c_str());
 
     if (waitSMTPResponse(http) != 250)
     {
       _smtpStatus = SMTP_STATUS_SEND_HEADER_FAILED;
       if (smtpData._sendCallback)
-        smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+      {
+        cbData._info = STR_53 + smtpErrorReasonStr();
+        cbData._success = false;
+        smtpData._sendCallback(cbData);
+      }
+      cbData.empty();
       return false;
     }
   }
 
   if (smtpData._sendCallback)
-    smtpData._sendCallback(SendStatus(FPSTR(SMTP_MSG7), false));
+  {
+    cbData._info = STR_126;
+    cbData._success = false;
+    smtpData._sendCallback(cbData);
+  }
 
-  tcp->println(FPSTR(DATA));
+  tcp->println(STR_16);
 
   if (waitSMTPResponse(http) != 354)
   {
     _smtpStatus = SMTP_STATUS_SEND_BODY_FAILED;
     if (smtpData._sendCallback)
-      smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+    {
+      cbData._info = STR_53 + smtpErrorReasonStr();
+      cbData._success = false;
+      smtpData._sendCallback(cbData);
+    }
+    cbData.empty();
     return false;
   }
 
   tcp->print(buf2.c_str());
 
-  tcp->print(SUBJ);
+  tcp->print(STR_24);
   tcp->println(smtpData._subject.c_str());
-  tcp->print(MIME);
-  tcp->print(MULTIPART_MIXED);
-  tcp->print(BOUNDARY);
-  tcp->print(QDNEWLINE);
+  tcp->print(STR_3);
+  tcp->print(STR_1);
+  tcp->print(STR_2);
+  tcp->print(STR_35);
 
   buf.clear();
 
@@ -1006,18 +1132,26 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   tcp->print(buf.c_str());
 
   if (smtpData._attach._index > 0)
-    smtpData._sendCallback(SendStatus(FPSTR(SMTP_MSG8), false));
+  {
+    cbData._info = STR_127;
+    cbData._success = false;
+    smtpData._sendCallback(cbData);
+  }
 
   for (uint8_t i = 0; i < smtpData._attach._index; i++)
   {
     if (smtpData._attach._type[i] == 0)
     {
-      smtpData._sendCallback(SendStatus(smtpData._attach._filename[i].c_str(), false));
+
+      cbData._info = smtpData._attach._filename[i];
+      cbData._success = false;
+      smtpData._sendCallback(cbData);
+
       buf.clear();
       set_attachment_header(i, buf, smtpData._attach);
       tcp->print(buf.c_str());
       send_base64_encode_data(tcp, smtpData._attach._buf[i].front(), smtpData._attach._size[i]);
-      tcp->print(NEWLINE);
+      tcp->print(STR_34);
     }
     else
     {
@@ -1029,30 +1163,41 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
 
       if (SD.exists(smtpData._attach._filename[i].c_str()))
       {
-        smtpData._sendCallback(SendStatus(smtpData._attach._filename[i].c_str(), false));
+        cbData._info = smtpData._attach._filename[i];
+        cbData._success = false;
+        smtpData._sendCallback(cbData);
 
         buf.clear();
         set_attachment_header(i, buf, smtpData._attach);
         tcp->print(buf.c_str());
         send_base64_encode_file(tcp, smtpData._attach._filename[i].c_str());
-        tcp->print(NEWLINE);
+        tcp->print(STR_34);
       }
     }
   }
 
-  tcp->print(DD);
-  tcp->print(BOUNDARY);
-  tcp->print(DD);
-  tcp->print(END);
+  tcp->print(STR_33);
+  tcp->print(STR_2);
+  tcp->print(STR_33);
+  tcp->print(STR_37);
 
   if (smtpData._sendCallback)
-    smtpData._sendCallback(SendStatus(FPSTR(SMTP_MSG9), false));
+  {
+    cbData._info = STR_128;
+    cbData._success = false;
+    smtpData._sendCallback(cbData);
+  }
 
   if (waitSMTPResponse(http) != 250)
   {
     _smtpStatus = SMTP_STATUS_SEND_BODY_FAILED;
     if (smtpData._sendCallback)
-      smtpData._sendCallback(SendStatus(FPSTR(IMAP_SMTP_MSG1) + smtpErrorReason(), false));
+    {
+      cbData._info = STR_53 + smtpErrorReasonStr();
+      cbData._success = false;
+      smtpData._sendCallback(cbData);
+    }
+    cbData.empty();
     return false;
   }
 
@@ -1060,90 +1205,128 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   std::string().swap(buf2);
 
   if (smtpData._sendCallback)
-    smtpData._sendCallback(SendStatus(FPSTR(SMTP_MSG10), true));
+  {
+    cbData._info = STR_129;
+    cbData._success = true;
+    smtpData._sendCallback(cbData);
+  }
 
+  cbData.empty();
   return true;
 }
 
 String ESP32_MailClient::smtpErrorReason()
 {
+  std::string res = "";
   switch (_smtpStatus)
   {
-    case SMTP_STATUS_SERVER_CONNECT_FAILED:
-      return FPSTR(SERVER_CONNECT_FAILED);
-    case SMTP_STATUS_SMTP_RESPONSE_FAILED:
-      return FPSTR(SMTP_RESPONSE_FAILED);
-    case SMTP_STATUS_IDENTIFICATION_FAILED:
-      return FPSTR(IDENTIFICATION_FAILED);
-    case SMTP_STATUS_AUTHEN_NOT_SUPPORT:
-      return FPSTR(AUTHEN_NOT_SUPPORT);
-    case SMTP_STATUS_AUTHEN_FAILED:
-      return FPSTR(AUTHEN_FAILED);
-    case SMTP_STATUS_USER_LOGIN_FAILED:
-      return FPSTR(USER_LOGIN_FAILED);
-    case SMTP_STATUS_PASSWORD_LOGIN_FAILED:
-      return FPSTR(PASSWORD_LOGIN_FAILED);
-    case SMTP_STATUS_SEND_HEADER_FAILED:
-      return FPSTR(SEND_HEADER_FAILED);
-    case SMTP_STATUS_SEND_BODY_FAILED:
-      return FPSTR(SEND_BODY_FAILED);
-    default:
-      return "";
+  case SMTP_STATUS_SERVER_CONNECT_FAILED:
+    res = STR_38;
+  case SMTP_STATUS_SMTP_RESPONSE_FAILED:
+    res = STR_39;
+  case SMTP_STATUS_IDENTIFICATION_FAILED:
+    res = STR_41;
+  case SMTP_STATUS_AUTHEN_NOT_SUPPORT:
+    res = STR_42;
+  case SMTP_STATUS_AUTHEN_FAILED:
+    res = STR_43;
+  case SMTP_STATUS_USER_LOGIN_FAILED:
+    res = STR_44;
+  case SMTP_STATUS_PASSWORD_LOGIN_FAILED:
+    res = STR_47;
+  case SMTP_STATUS_SEND_HEADER_FAILED:
+    res = STR_48;
+  case SMTP_STATUS_SEND_BODY_FAILED:
+    res = STR_49;
+  default:
+    res = "";
   }
+  return res.c_str();
+}
+
+std::string ESP32_MailClient::smtpErrorReasonStr()
+{
+  std::string res = "";
+  switch (_smtpStatus)
+  {
+  case SMTP_STATUS_SERVER_CONNECT_FAILED:
+    res = STR_38;
+  case SMTP_STATUS_SMTP_RESPONSE_FAILED:
+    res = STR_39;
+  case SMTP_STATUS_IDENTIFICATION_FAILED:
+    res = STR_41;
+  case SMTP_STATUS_AUTHEN_NOT_SUPPORT:
+    res = STR_42;
+  case SMTP_STATUS_AUTHEN_FAILED:
+    res = STR_43;
+  case SMTP_STATUS_USER_LOGIN_FAILED:
+    res = STR_44;
+  case SMTP_STATUS_PASSWORD_LOGIN_FAILED:
+    res = STR_47;
+  case SMTP_STATUS_SEND_HEADER_FAILED:
+    res = STR_48;
+  case SMTP_STATUS_SEND_BODY_FAILED:
+    res = STR_49;
+  default:
+    res = "";
+  }
+  return res;
 }
 
 String ESP32_MailClient::imapErrorReason()
 {
+  std::string res = "";
   switch (_imapStatus)
   {
-    case IMAP_STATUS_SERVER_CONNECT_FAILED:
-      return FPSTR(SERVER_CONNECT_FAILED);
-    case IMAP_STATUS_IMAP_RESPONSE_FAILED:
-      return FPSTR(IMAP_RESPONSE_FAILED);
-    case IMAP_STATUS_LOGIN_FAILED:
-      return FPSTR(LOGIN_FAILED);
-    case IMAP_STATUS_BAD_COMMAND:
-      return FPSTR(BAD_IMAP_COMMAND);
-    default:
-      return "";
+  case IMAP_STATUS_SERVER_CONNECT_FAILED:
+    res = STR_38;
+  case IMAP_STATUS_IMAP_RESPONSE_FAILED:
+    res = STR_40;
+  case IMAP_STATUS_LOGIN_FAILED:
+    res = STR_45;
+  case IMAP_STATUS_BAD_COMMAND:
+    res = STR_46;
+  default:
+    res = "";
   }
+  return res.c_str();
 }
 
 void ESP32_MailClient::set_message_header(string &header, string &message, bool htmlFormat)
 {
-  header += FPSTR(DD);
-  header += FPSTR(BOUNDARY);
-  header += FPSTR(NEWLINE);
+  header += STR_33;
+  header += STR_2;
+  header += STR_34;
   if (!htmlFormat)
-    header += FPSTR(CT_TEXT);
+    header += STR_27;
   else
-    header += FPSTR(CT_HTML);
+    header += STR_28;
 
-  header += FPSTR(TE_7B);
-  header += FPSTR(NEWLINE);
+  header += STR_29;
+  header += STR_34;
 
   header += message;
-  header += FPSTR(NEWLINE);
-  header += FPSTR(NEWLINE);
+  header += STR_34;
+  header += STR_34;
 }
 
-void ESP32_MailClient::set_attachment_header(uint8_t index, string &header, attachmentData &attach)
+void ESP32_MailClient::set_attachment_header(uint8_t index, std::string &header, attachmentData &attach)
 {
 
-  header += FPSTR(DD);
-  header += FPSTR(BOUNDARY);
-  header += FPSTR(NEWLINE);
+  header += STR_33;
+  header += STR_2;
+  header += STR_34;
 
-  header += FPSTR(CONTENT_TYPE);
+  header += STR_25;
 
   if (attach._mime_type[index].length() == 0)
-    header += FPSTR(MIME_OCTET_STREAM);
+    header += STR_32;
   else
     header += attach._mime_type[index];
 
-  header += FPSTR(NAME);
+  header += STR_26;
 
-  string filename(attach._filename[index]);
+  std::string filename(attach._filename[index]);
 
   size_t found = filename.find_last_of("/\\");
 
@@ -1154,14 +1337,14 @@ void ESP32_MailClient::set_attachment_header(uint8_t index, string &header, atta
   }
 
   header += filename;
-  header += FPSTR(QNEWLINE);
+  header += STR_36;
 
-  header += FPSTR(CT_DISPT);
+  header += STR_30;
   header += filename;
-  header += FPSTR(QNEWLINE);
+  header += STR_36;
 
-  header += FPSTR(TE_BASE64);
-  header += FPSTR(NEWLINE);
+  header += STR_31;
+  header += STR_34;
 
   std::string().swap(filename);
 }
@@ -1192,13 +1375,14 @@ int ESP32_MailClient::waitSMTPResponse(HTTPClientESP32Ex &http)
       c = tcp->read();
       lineBuf.append(1, c);
 
-      if (lineBuf.find(SMTP_IMAP_CMD1) != std::string::npos || lineBuf.find(SMTP_IMAP_CMD2) != std::string::npos)
+      if (lineBuf.find(STR_158) != std::string::npos || lineBuf.find(STR_159) != std::string::npos)
         completeResp = true;
 
       if (c == '\n')
       {
         dataTime = millis();
-        if (lfCount == 0) {
+        if (lfCount == 0)
+        {
           p1 = lineBuf.find(" ");
           if (p1 != std::string::npos)
             resCode = atoi(lineBuf.substr(0, p1).c_str());
@@ -1209,7 +1393,6 @@ int ESP32_MailClient::waitSMTPResponse(HTTPClientESP32Ex &http)
 
       if (millis() - dataTime > http.tcpTimeout || completeResp)
         break;
-
     }
   }
 
@@ -1217,7 +1400,7 @@ int ESP32_MailClient::waitSMTPResponse(HTTPClientESP32Ex &http)
   return resCode;
 }
 
-bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapData, uint8_t imapCommandType, string endResp1, string endResp2, int maxChar, int mailIndex, int messageDataIndex, std::string part)
+bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapData, ReadStatus &cbData, uint8_t imapCommandType, string endResp1, string endResp2, int maxChar, int mailIndex, int messageDataIndex, std::string part)
 {
 
   long dataTime = millis();
@@ -1228,7 +1411,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
   std::string filepath = "";
   std::string hpath = "";
   char dest[100];
-
+  char buf[50];
 
   int readCount = 0;
   int lfCount = 0;
@@ -1281,7 +1464,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
           completeResp = true;
       }
 
-      if (lineBuf.find(SMTP_IMAP_CMD1) != std::string::npos || lineBuf.find(SMTP_IMAP_CMD2) != std::string::npos)
+      if (lineBuf.find(STR_158) != std::string::npos || lineBuf.find(STR_159) != std::string::npos)
       {
         if (imapData._error.size() > 0 && mailIndex > -1)
         {
@@ -1306,7 +1489,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
         if (payloadLength > 0 && charCount < payloadLength - 1)
         {
 
-          if (imapData._messageDataInfo[mailIndex][messageDataIndex]._transfer_encoding != IMAP_CMD32)
+          if (imapData._messageDataInfo[mailIndex][messageDataIndex]._transfer_encoding != STR_160)
           {
             if (charCount < maxChar)
               imapData._messageDataInfo[mailIndex][messageDataIndex]._text.append(1, c);
@@ -1325,34 +1508,31 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
                   filepath.clear();
 
                   filepath = imapData._savePath;
-                  filepath += IMAP_CMD75;
+                  filepath += STR_202;
                   filepath += imapData._msgNum[mailIndex];
 
                   if (!SD.exists(filepath.c_str()))
                     SD.mkdir(filepath.c_str());
 
                   if (!imapData._headerSaved)
-                    hpath = filepath + IMAP_CMD76;
+                    hpath = filepath + STR_203;
 
-                  if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == IMAP_CMD27)
+                  if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == STR_155)
                   {
                     if (imapData._saveDecodedText)
-                      filepath += IMAP_CMD33;
+                      filepath += STR_161;
                     else
-                      filepath += IMAP_CMD34;
+                      filepath += STR_162;
                   }
-                  else if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == IMAP_CMD26)
+                  else if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == STR_154)
                   {
                     if (imapData._saveDecodedHTML)
-                      filepath += IMAP_CMD35;
+                      filepath += STR_163;
                     else
-                      filepath += IMAP_CMD36;
+                      filepath += STR_164;
                   }
 
-
-
                   file = SD.open(filepath.c_str(), FILE_WRITE);
-
                 }
                 else
                 {
@@ -1361,7 +1541,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
                   {
                     imapData._messageDataInfo[mailIndex][messageDataIndex]._error = true;
                     imapData._messageDataInfo[mailIndex][messageDataIndex]._downloadError.clear();
-                    imapData._messageDataInfo[mailIndex][messageDataIndex]._downloadError = IMAP_MSG40;
+                    imapData._messageDataInfo[mailIndex][messageDataIndex]._downloadError = STR_89;
                   }
                 }
               }
@@ -1388,17 +1568,17 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
               imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_ATTACHMENT)
           {
 
-            p1 = lineBuf.find(IMAP_CMD37);
+            p1 = lineBuf.find(STR_165);
             if (p1 != std::string::npos)
               validResponse = true;
           }
 
-          p1 = lineBuf.find(IMAP_CMD38);
+          p1 = lineBuf.find(STR_166);
           if (p1 != std::string::npos)
             validResponse = true;
         }
 
-        p1 = lineBuf.find(IMAP_CMD39);
+        p1 = lineBuf.find(STR_211);
         if (p1 != std::string::npos)
           validResponse = true;
 
@@ -1413,174 +1593,174 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
               imapData._messageDataCount[mailIndex]++;
             }
 
-            p1 = tmp.find(IMAP_CMD40);
+            p1 = tmp.find(STR_167);
             if (p1 != std::string::npos)
             {
 
-              p2 = lineBuf.find(";", p1 + 14);
+              p2 = lineBuf.find(";", p1 + strlen(STR_167));
               if (p2 != std::string::npos)
               {
 
-                if (validSubstringRange(p1 + 14, p2 - p1 - 14, lineBuf))
-                  imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType = lineBuf.substr(p1 + 14, p2 - p1 - 14);
+                if (validSubstringRange(p1 + strlen(STR_167), p2 - p1 - strlen(STR_167), lineBuf))
+                  imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType = lineBuf.substr(p1 + strlen(STR_167), p2 - p1 - strlen(STR_167));
 
-                p1 = tmp.find(IMAP_CMD41, p2);
+                p1 = tmp.find(STR_168, p2);
                 if (p1 != std::string::npos)
                 {
-                  p2 = lineBuf.find(IMAP_CMD7, p1 + 9);
+                  p2 = lineBuf.find(STR_136, p1 + strlen(STR_168));
                   if (p2 != std::string::npos)
                   {
 
-                    if (validSubstringRange(p1 + 9, p2 - p1 - 9, lineBuf))
-                      imapData._messageDataInfo[mailIndex][messageDataIndex]._charset = lineBuf.substr(p1 + 9, p2 - p1 - 9);
+                    if (validSubstringRange(p1 + strlen(STR_168), p2 - p1 - strlen(STR_168), lineBuf))
+                      imapData._messageDataInfo[mailIndex][messageDataIndex]._charset = lineBuf.substr(p1 + strlen(STR_168), p2 - p1 - strlen(STR_168));
                   }
                 }
-                else if (tmp.find(IMAP_CMD42, p2) != std::string::npos)
+                else if (tmp.find(STR_169, p2) != std::string::npos)
                 {
-                  p1 = tmp.find(IMAP_CMD42, p2);
+                  p1 = tmp.find(STR_169, p2);
 
-                  imapData._messageDataInfo[mailIndex][messageDataIndex]._charset = lineBuf.substr(p1 + 8);
+                  imapData._messageDataInfo[mailIndex][messageDataIndex]._charset = lineBuf.substr(p1 + strlen(STR_169));
                 }
 
-                p1 = tmp.find(IMAP_CMD43, p2);
+                p1 = tmp.find(STR_170, p2);
                 if (p1 != std::string::npos)
                 {
-                  p2 = lineBuf.find(IMAP_CMD7, p1 + 6);
+                  p2 = lineBuf.find(STR_136, p1 + strlen(STR_170));
                   if (p2 != std::string::npos)
                   {
 
-                    if (validSubstringRange(p1 + 6, p2 - p1 - 6, lineBuf))
-                      imapData._messageDataInfo[mailIndex][messageDataIndex]._name = lineBuf.substr(p1 + 6, p2 - p1 - 6);
+                    if (validSubstringRange(p1 + strlen(STR_170), p2 - p1 - strlen(STR_170), lineBuf))
+                      imapData._messageDataInfo[mailIndex][messageDataIndex]._name = lineBuf.substr(p1 + strlen(STR_170), p2 - p1 - strlen(STR_170));
                   }
                 }
-                else if (tmp.find(IMAP_CMD44, p2) != std::string::npos)
+                else if (tmp.find(STR_171, p2) != std::string::npos)
                 {
-                  p1 = tmp.find(IMAP_CMD44, p2);
-                  imapData._messageDataInfo[mailIndex][messageDataIndex]._name = lineBuf.substr(p1 + 5);
+                  p1 = tmp.find(STR_171, p2);
+                  imapData._messageDataInfo[mailIndex][messageDataIndex]._name = lineBuf.substr(p1 + strlen(STR_171));
                 }
               }
             }
 
-            p1 = tmp.find(IMAP_CMD45);
+            p1 = tmp.find(STR_172);
             if (p1 != std::string::npos)
             {
-              p2 = lineBuf.find(IMAP_CMD46, p1 + 27);
+              p2 = lineBuf.find(STR_173, p1 + strlen(STR_172));
 
               if (p2 != std::string::npos)
               {
-                if (validSubstringRange(p1 + 27, p2 - p1 - 27, lineBuf))
-                  imapData._messageDataInfo[mailIndex][messageDataIndex]._transfer_encoding = lineBuf.substr(p1 + 27, p2 - p1 - 27);
+                if (validSubstringRange(p1 + strlen(STR_172), p2 - p1 - strlen(STR_172), lineBuf))
+                  imapData._messageDataInfo[mailIndex][messageDataIndex]._transfer_encoding = lineBuf.substr(p1 + strlen(STR_172), p2 - p1 - strlen(STR_172));
               }
               else
               {
-                imapData._messageDataInfo[mailIndex][messageDataIndex]._transfer_encoding = lineBuf.substr(p1 + 27);
+                imapData._messageDataInfo[mailIndex][messageDataIndex]._transfer_encoding = lineBuf.substr(p1 + strlen(STR_172));
               }
             }
 
-            p1 = tmp.find(IMAP_CMD47);
+            p1 = tmp.find(STR_174);
             if (p1 != std::string::npos)
             {
-              p2 = lineBuf.find(IMAP_CMD46, p1 + 21);
+              p2 = lineBuf.find(STR_173, p1 + strlen(STR_174));
 
               if (p2 != std::string::npos)
               {
-                if (validSubstringRange(p1 + 21, p2 - p1 - 21, lineBuf))
-                  imapData._messageDataInfo[mailIndex][messageDataIndex]._descr = lineBuf.substr(p1 + 21, p2 - p1 - 21);
+                if (validSubstringRange(p1 + strlen(STR_174), p2 - p1 - strlen(STR_174), lineBuf))
+                  imapData._messageDataInfo[mailIndex][messageDataIndex]._descr = lineBuf.substr(p1 + strlen(STR_174), p2 - p1 - strlen(STR_174));
               }
               else
-                imapData._messageDataInfo[mailIndex][messageDataIndex]._descr = lineBuf.substr(p1 + 21);
+                imapData._messageDataInfo[mailIndex][messageDataIndex]._descr = lineBuf.substr(p1 + strlen(STR_174));
             }
 
-            p1 = tmp.find(IMAP_CMD48);
+            p1 = tmp.find(STR_175);
             if (p1 != std::string::npos)
             {
-              p2 = lineBuf.find(";", p1 + 21);
+              p2 = lineBuf.find(";", p1 + strlen(STR_175));
 
               if (p2 != std::string::npos)
               {
-                if (validSubstringRange(p1 + 21, p2 - p1 - 21, lineBuf))
-                  imapData._messageDataInfo[mailIndex][messageDataIndex]._disposition = lineBuf.substr(p1 + 21, p2 - p1 - 21);
+                if (validSubstringRange(p1 + strlen(STR_175), p2 - p1 - strlen(STR_175), lineBuf))
+                  imapData._messageDataInfo[mailIndex][messageDataIndex]._disposition = lineBuf.substr(p1 + strlen(STR_175), p2 - p1 - strlen(STR_175));
               }
               else
-                imapData._messageDataInfo[mailIndex][messageDataIndex]._disposition = lineBuf.substr(p1 + 21);
+                imapData._messageDataInfo[mailIndex][messageDataIndex]._disposition = lineBuf.substr(p1 + strlen(STR_175));
 
-              if (imapData._messageDataInfo[mailIndex][messageDataIndex]._disposition == IMAP_CMD25)
+              if (imapData._messageDataInfo[mailIndex][messageDataIndex]._disposition == STR_153)
                 imapData._attachmentCount[mailIndex]++;
             }
 
             if (imapData._messageDataInfo[mailIndex][messageDataIndex]._disposition != "")
             {
 
-              p1 = tmp.find(IMAP_CMD49);
+              p1 = tmp.find(STR_176);
               if (p1 != std::string::npos)
               {
-                p2 = lineBuf.find(IMAP_CMD7, p1 + 10);
+                p2 = lineBuf.find(STR_136, p1 + strlen(STR_176));
 
                 if (p2 != std::string::npos)
                 {
-                  if (validSubstringRange(p1 + 10, p2 - p1 - 10, lineBuf))
-                    imapData._messageDataInfo[mailIndex][messageDataIndex]._filename = lineBuf.substr(p1 + 10, p2 - p1 - 10);
+                  if (validSubstringRange(p1 + strlen(STR_176), p2 - p1 - strlen(STR_176), lineBuf))
+                    imapData._messageDataInfo[mailIndex][messageDataIndex]._filename = lineBuf.substr(p1 + strlen(STR_176), p2 - p1 - strlen(STR_176));
                 }
               }
-              else if (tmp.find(IMAP_CMD50) != std::string::npos)
+              else if (tmp.find(STR_177) != std::string::npos)
               {
 
-                p1 = tmp.find(IMAP_CMD50);
-                imapData._messageDataInfo[mailIndex][messageDataIndex]._filename = lineBuf.substr(p1 + 9);
+                p1 = tmp.find(STR_177);
+                imapData._messageDataInfo[mailIndex][messageDataIndex]._filename = lineBuf.substr(p1 + strlen(STR_177));
               }
 
-              p1 = tmp.find(IMAP_CMD51);
+              p1 = tmp.find(STR_178);
               if (p1 != std::string::npos)
               {
-                p2 = lineBuf.find(";", p1 + 6);
+                p2 = lineBuf.find(";", p1 + strlen(STR_178) + 1);
                 if (p2 != std::string::npos)
                 {
 
-                  if (validSubstringRange(p1 + 5, p2 - p1 - 5, lineBuf))
-                    imapData._messageDataInfo[mailIndex][messageDataIndex]._size = atoi(lineBuf.substr(p1 + 5, p2 - p1 - 5).c_str());
+                  if (validSubstringRange(p1 + strlen(STR_178), p2 - p1 - strlen(STR_178), lineBuf))
+                    imapData._messageDataInfo[mailIndex][messageDataIndex]._size = atoi(lineBuf.substr(p1 + strlen(STR_178), p2 - p1 - strlen(STR_178)).c_str());
                   imapData._totalAttachFileSize[mailIndex] += imapData._messageDataInfo[mailIndex][messageDataIndex]._size;
                 }
                 else
                 {
 
-                  imapData._messageDataInfo[mailIndex][messageDataIndex]._size = atoi(lineBuf.substr(p1 + 5).c_str());
+                  imapData._messageDataInfo[mailIndex][messageDataIndex]._size = atoi(lineBuf.substr(p1 + strlen(STR_178)).c_str());
                   imapData._totalAttachFileSize[mailIndex] += imapData._messageDataInfo[mailIndex][messageDataIndex]._size;
                 }
               }
 
-              p1 = tmp.find(IMAP_CMD52);
+              p1 = tmp.find(STR_179);
               if (p1 != std::string::npos)
               {
-                p2 = lineBuf.find(IMAP_CMD7, p1 + 15);
+                p2 = lineBuf.find(STR_136, p1 + strlen(STR_179));
                 if (p2 != std::string::npos)
                 {
 
-                  if (validSubstringRange(p1 + 15, p2 - p1 - 15, lineBuf))
-                    imapData._messageDataInfo[mailIndex][messageDataIndex]._creation_date = lineBuf.substr(p1 + 15, p2 - p1 - 15);
+                  if (validSubstringRange(p1 + strlen(STR_179), p2 - p1 - strlen(STR_179), lineBuf))
+                    imapData._messageDataInfo[mailIndex][messageDataIndex]._creation_date = lineBuf.substr(p1 + strlen(STR_179), p2 - p1 - strlen(STR_179));
                 }
               }
-              else if (tmp.find(IMAP_CMD53) != std::string::npos)
+              else if (tmp.find(STR_180) != std::string::npos)
               {
-                p1 = tmp.find(IMAP_CMD53);
+                p1 = tmp.find(STR_180);
 
-                imapData._messageDataInfo[mailIndex][messageDataIndex]._creation_date = lineBuf.substr(p1 + 14);
+                imapData._messageDataInfo[mailIndex][messageDataIndex]._creation_date = lineBuf.substr(p1 + strlen(STR_180));
               }
 
-              p1 = tmp.find(IMAP_CMD54);
+              p1 = tmp.find(STR_181);
               if (p1 != std::string::npos)
               {
-                p2 = lineBuf.find(IMAP_CMD7, p1 + 19);
+                p2 = lineBuf.find(STR_136, p1 + strlen(STR_181));
                 if (p2 != std::string::npos)
                 {
-                  if (validSubstringRange(p1 + 19, p2 - p1 - 19, lineBuf))
-                    imapData._messageDataInfo[mailIndex][messageDataIndex]._modification_date = lineBuf.substr(p1 + 19, p2 - p1 - 19);
+                  if (validSubstringRange(p1 + strlen(STR_181), p2 - p1 - strlen(STR_181), lineBuf))
+                    imapData._messageDataInfo[mailIndex][messageDataIndex]._modification_date = lineBuf.substr(p1 + strlen(STR_181), p2 - p1 - strlen(STR_181));
                 }
               }
-              else if (tmp.find(IMAP_CMD55) != std::string::npos)
+              else if (tmp.find(STR_182) != std::string::npos)
               {
 
-                p1 = tmp.find(IMAP_CMD55);
-                imapData._messageDataInfo[mailIndex][messageDataIndex]._modification_date = lineBuf.substr(p1 + 18);
+                p1 = tmp.find(STR_182);
+                imapData._messageDataInfo[mailIndex][messageDataIndex]._modification_date = lineBuf.substr(p1 + strlen(STR_182));
               }
             }
 
@@ -1598,7 +1778,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
           {
             if (lineBuf[i] == ' ')
             {
-              if (msgNumBuf != IMAP_CMD56 && msgNumBuf != IMAP_CMD12 && imapData._msgNum.size() <= max)
+              if (msgNumBuf != STR_183 && msgNumBuf != STR_141 && imapData._msgNum.size() <= max)
               {
                 imapData._msgNum.push_back(msgNumBuf);
 
@@ -1615,7 +1795,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
             }
           }
 
-          if (msgNumBuf.length() > 0 && msgNumBuf != IMAP_CMD56 && msgNumBuf != IMAP_CMD12 && imapData._msgNum.size() <= max)
+          if (msgNumBuf.length() > 0 && msgNumBuf != STR_183 && msgNumBuf != STR_141 && imapData._msgNum.size() <= max)
           {
             imapData._msgNum.push_back(msgNumBuf);
             imapData._searchCount++;
@@ -1632,7 +1812,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
 
           uint8_t _headerType = 0;
 
-          p1 = tmp.find(IMAP_CMD57);
+          p1 = tmp.find(STR_184);
           if (p1 != std::string::npos)
           {
             headerType = IMAP_HEADER_TYPE::FROM;
@@ -1640,14 +1820,14 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
 
             string from;
 
-            p2 = lineBuf.find(IMAP_CMD46, p1 + 6);
+            p2 = lineBuf.find(STR_173, p1 + strlen(STR_184));
             if (p2 != std::string::npos)
             {
-              if (validSubstringRange(p1 + 6, p2 - p1 - 6, lineBuf))
-                from = lineBuf.substr(p1 + 6, p2 - p1 - 6);
+              if (validSubstringRange(p1 + strlen(STR_184), p2 - p1 - strlen(STR_184), lineBuf))
+                from = lineBuf.substr(p1 + strlen(STR_184), p2 - p1 - strlen(STR_184));
             }
             else
-              from = lineBuf.substr(p1 + 6);
+              from = lineBuf.substr(p1 + strlen(STR_184));
 
             if (from[0] == '=' && from[1] == '?')
             {
@@ -1668,21 +1848,21 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
             std::string().swap(from);
           }
 
-          p1 = tmp.find(IMAP_CMD58);
+          p1 = tmp.find(STR_185);
           if (p1 != std::string::npos)
           {
             headerType = IMAP_HEADER_TYPE::TO;
             _headerType = IMAP_HEADER_TYPE::TO;
 
             string to;
-            p2 = lineBuf.find(IMAP_CMD46, p1 + 1);
+            p2 = lineBuf.find(STR_173, p1 + 1);
             if (p2 != std::string::npos)
             {
-              if (validSubstringRange(p1 + 4, p2 - p1 - 4, lineBuf))
-                to = lineBuf.substr(p1 + 4, p2 - p1 - 4);
+              if (validSubstringRange(p1 + strlen(STR_185), p2 - p1 - strlen(STR_185), lineBuf))
+                to = lineBuf.substr(p1 + strlen(STR_185), p2 - p1 - strlen(STR_185));
             }
             else
-              to = lineBuf.substr(p1 + 4);
+              to = lineBuf.substr(p1 + strlen(STR_185));
 
             if (to[0] == '=' && to[1] == '?')
             {
@@ -1703,21 +1883,21 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
             std::string().swap(to);
           }
 
-          p1 = tmp.find(IMAP_CMD59);
+          p1 = tmp.find(STR_186);
           if (p1 != std::string::npos)
           {
             headerType = IMAP_HEADER_TYPE::CC;
             _headerType = IMAP_HEADER_TYPE::CC;
 
             string cc;
-            p2 = lineBuf.find(IMAP_CMD46, p1 + 1);
+            p2 = lineBuf.find(STR_173, p1 + 1);
             if (p2 != std::string::npos)
             {
-              if (validSubstringRange(p1 + 4, p2 - p1 - 4, lineBuf))
-                cc = lineBuf.substr(p1 + 4, p2 - p1 - 4);
+              if (validSubstringRange(p1 + strlen(STR_186), p2 - p1 - strlen(STR_186), lineBuf))
+                cc = lineBuf.substr(p1 + strlen(STR_186), p2 - p1 - strlen(STR_186));
             }
             else
-              cc = lineBuf.substr(p1 + 4);
+              cc = lineBuf.substr(p1 + strlen(STR_186));
 
             if (cc[0] == '=' && cc[1] == '?')
             {
@@ -1738,23 +1918,23 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
             std::string().swap(cc);
           }
 
-          p1 = tmp.find(IMAP_CMD60);
+          p1 = tmp.find(STR_187);
           if (p1 != std::string::npos)
           {
             headerType = IMAP_HEADER_TYPE::SUBJECT;
             _headerType = IMAP_HEADER_TYPE::SUBJECT;
 
-            p2 = lineBuf.find(IMAP_CMD46, p1 + 1);
+            p2 = lineBuf.find(STR_173, p1 + 1);
 
             string subject;
             memset(dest, 0, sizeof dest);
             if (p2 != std::string::npos)
             {
-              if (validSubstringRange(p1 + 9, p2 - p1 - 9, lineBuf))
-                subject = lineBuf.substr(p1 + 9, p2 - p1 - 9);
+              if (validSubstringRange(p1 + strlen(STR_187), p2 - p1 - strlen(STR_187), lineBuf))
+                subject = lineBuf.substr(p1 + strlen(STR_187), p2 - p1 - strlen(STR_187));
             }
             else
-              subject = lineBuf.substr(p1 + 9);
+              subject = lineBuf.substr(p1 + strlen(STR_187));
 
             if (subject[0] == '=' && subject[1] == '?')
             {
@@ -1773,71 +1953,71 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
             imapData._subject[mailIndex] = dest;
             std::string().swap(subject);
           }
-          p1 = tmp.find(IMAP_CMD61);
+          p1 = tmp.find(STR_188);
           if (p1 != std::string::npos)
           {
             headerType = IMAP_HEADER_TYPE::DATE;
             _headerType = IMAP_HEADER_TYPE::DATE;
 
-            p2 = lineBuf.find(IMAP_CMD46, p1 + 1);
+            p2 = lineBuf.find(STR_173, p1 + 1);
             if (p2 != std::string::npos)
             {
-              if (validSubstringRange(p1 + 6, p2 - p1 - 6, lineBuf))
-                imapData._date[mailIndex] = lineBuf.substr(p1 + 6, p2 - p1 - 6);
+              if (validSubstringRange(p1 + strlen(STR_188), p2 - p1 - strlen(STR_188), lineBuf))
+                imapData._date[mailIndex] = lineBuf.substr(p1 + strlen(STR_188), p2 - p1 - strlen(STR_188));
             }
             else
-              imapData._date[mailIndex] = lineBuf.substr(p1 + 6);
+              imapData._date[mailIndex] = lineBuf.substr(p1 + strlen(STR_188));
           }
 
-          p1 = tmp.find(IMAP_CMD62);
+          p1 = tmp.find(STR_189);
           if (p1 != std::string::npos)
           {
             headerType = IMAP_HEADER_TYPE::MSG_ID;
             _headerType = IMAP_HEADER_TYPE::MSG_ID;
 
-            p2 = lineBuf.find(IMAP_CMD46, p1 + 1);
+            p2 = lineBuf.find(STR_173, p1 + 1);
             if (p2 != std::string::npos)
             {
-              if (validSubstringRange(p1 + 12, p2 - p1 - 12, lineBuf))
-                imapData._msgID[mailIndex] = lineBuf.substr(p1 + 12, p2 - p1 - 12);
+              if (validSubstringRange(p1 + strlen(STR_189), p2 - p1 - strlen(STR_189), lineBuf))
+                imapData._msgID[mailIndex] = lineBuf.substr(p1 + strlen(STR_189), p2 - p1 - strlen(STR_189));
             }
             else
-              imapData._msgID[mailIndex] = lineBuf.substr(p1 + 12);
+              imapData._msgID[mailIndex] = lineBuf.substr(p1 + strlen(STR_189));
           }
 
-          p1 = tmp.find(IMAP_CMD63);
+          p1 = tmp.find(STR_190);
           if (p1 != std::string::npos)
           {
             headerType = IMAP_HEADER_TYPE::ACCEPT_LANG;
             _headerType = IMAP_HEADER_TYPE::ACCEPT_LANG;
 
-            p2 = lineBuf.find(IMAP_CMD46, p1 + 1);
+            p2 = lineBuf.find(STR_173, p1 + 1);
             if (p2 != std::string::npos)
             {
-              if (validSubstringRange(p1 + 17, p2 - p1 - 17, lineBuf))
-                imapData._acceptLanguage[mailIndex] = lineBuf.substr(p1 + 17, p2 - p1 - 17);
+              if (validSubstringRange(p1 + strlen(STR_190), p2 - p1 - strlen(STR_190), lineBuf))
+                imapData._acceptLanguage[mailIndex] = lineBuf.substr(p1 + strlen(STR_190), p2 - p1 - strlen(STR_190));
             }
             else
-              imapData._acceptLanguage[mailIndex] = lineBuf.substr(p1 + 17);
+              imapData._acceptLanguage[mailIndex] = lineBuf.substr(p1 + strlen(STR_190));
           }
 
-          p1 = tmp.find(IMAP_CMD64);
+          p1 = tmp.find(STR_191);
           if (p1 != std::string::npos)
           {
             headerType = IMAP_HEADER_TYPE::CONT_LANG;
             _headerType = IMAP_HEADER_TYPE::CONT_LANG;
 
-            p2 = lineBuf.find(IMAP_CMD46, p1 + 1);
+            p2 = lineBuf.find(STR_173, p1 + 1);
             if (p2 != std::string::npos)
             {
-              if (validSubstringRange(p1 + 18, p2 - p1 - 18, lineBuf))
-                imapData._contentLanguage[mailIndex] = lineBuf.substr(p1 + 18, p2 - p1 - 18);
+              if (validSubstringRange(p1 + strlen(STR_191), p2 - p1 - strlen(STR_191), lineBuf))
+                imapData._contentLanguage[mailIndex] = lineBuf.substr(p1 + strlen(STR_191), p2 - p1 - strlen(STR_191));
             }
             else
-              imapData._contentLanguage[mailIndex] = lineBuf.substr(p1 + 18);
+              imapData._contentLanguage[mailIndex] = lineBuf.substr(p1 + strlen(STR_191));
           }
 
-          if (_headerType == 0 && lineBuf != IMAP_CMD65 && lineBuf.find(IMAP_CMD16) == std::string::npos)
+          if (_headerType == 0 && lineBuf != STR_192 && lineBuf.find(STR_145) == std::string::npos)
           {
             if (headerType == IMAP_HEADER_TYPE::FROM)
             {
@@ -1872,10 +2052,10 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
         {
           if (lfCount == 0)
           {
-            p1 = lineBuf.find_last_of(IMAP_CMD66);
+            p1 = lineBuf.find_last_of(STR_193);
             if (p1 != std::string::npos)
             {
-              p2 = lineBuf.find(IMAP_CMD67, p1 + 1);
+              p2 = lineBuf.find(STR_194, p1 + 1);
               if (p2 != std::string::npos)
                 if (validSubstringRange(p1 + 1, p2 - p1 - 1, lineBuf))
                   payloadLength = atoi(lineBuf.substr(p1 + 1, p2 - p1 - 1).c_str());
@@ -1885,15 +2065,15 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
 
         if (imapCommandType == IMAP_COMMAND_TYPE::LIST)
         {
-          p1 = lineBuf.find(IMAP_CMD68);
-          p2 = lineBuf.find(IMAP_CMD69);
+          p1 = lineBuf.find(STR_195);
+          p2 = lineBuf.find(STR_196);
 
           if (p1 != std::string::npos && p2 == std::string::npos)
           {
-            p2 = lineBuf.find_last_of(IMAP_CMD7);
+            p2 = lineBuf.find_last_of(STR_136);
             if (p2 != std::string::npos)
             {
-              p1 = lineBuf.find_last_of(IMAP_CMD7, p2 - 1);
+              p1 = lineBuf.find_last_of(STR_136, p2 - 1);
               if (p1 != std::string::npos)
               {
                 if (validSubstringRange(p1 + 1, p2 - p1 - 1, lineBuf))
@@ -1906,13 +2086,13 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
         if (imapCommandType == IMAP_COMMAND_TYPE::SELECT || imapCommandType == IMAP_COMMAND_TYPE::EXAMINE)
         {
 
-          p1 = lineBuf.find(IMAP_CMD70);
+          p1 = lineBuf.find(STR_197);
           if (p1 != std::string::npos)
           {
-            p1 = lineBuf.find(IMAP_CMD71);
+            p1 = lineBuf.find(STR_198);
             if (p1 != std::string::npos)
             {
-              p2 = lineBuf.find(IMAP_CMD65);
+              p2 = lineBuf.find(STR_192);
               if (p2 != std::string::npos)
               {
                 string tmp;
@@ -1941,17 +2121,17 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
             }
           }
 
-          p2 = lineBuf.find(IMAP_CMD72);
+          p2 = lineBuf.find(STR_199);
           if (p2 != std::string::npos)
           {
             if (validSubstringRange(2, p2 - 2, lineBuf))
               imapData._totalMessage = atoi(lineBuf.substr(2, p2 - 2).c_str());
           }
 
-          p1 = lineBuf.find(IMAP_CMD73);
+          p1 = lineBuf.find(STR_200);
           if (p1 != std::string::npos)
           {
-            p2 = lineBuf.find(IMAP_CMD28, p1 + 10);
+            p2 = lineBuf.find(STR_156, p1 + 10);
             if (p2 != std::string::npos)
             {
               if (validSubstringRange(p1 + 10, p2 - p1 - 10, lineBuf))
@@ -1963,7 +2143,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
         if (validResponse && imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_TEXT && lfCount > 0 && (charCount < maxChar || imapData._saveHTMLMsg || imapData._saveTextMsg))
         {
 
-          if (imapData._messageDataInfo[mailIndex][messageDataIndex]._transfer_encoding == IMAP_CMD32)
+          if (imapData._messageDataInfo[mailIndex][messageDataIndex]._transfer_encoding == STR_160)
           {
 
             unsigned char *decoded = base64_decode_char((const unsigned char *)lineBuf.c_str(), lineBuf.length(), &outputLength);
@@ -1988,29 +2168,28 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
 
                     filepath.clear();
                     filepath += imapData._savePath;
-                    filepath += IMAP_CMD75;
+                    filepath += STR_202;
                     filepath += imapData._msgNum[mailIndex];
 
                     if (!SD.exists(filepath.c_str()))
                       SD.mkdir(filepath.c_str());
 
                     if (!imapData._headerSaved)
-                      hpath = filepath + IMAP_CMD76;
+                      hpath = filepath + STR_203;
 
-
-                    if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == IMAP_CMD27)
+                    if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == STR_155)
                     {
                       if (imapData._saveDecodedText)
-                        filepath += IMAP_CMD33;
+                        filepath += STR_161;
                       else
-                        filepath += IMAP_CMD34;
+                        filepath += STR_162;
                     }
-                    else if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == IMAP_CMD26)
+                    else if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == STR_154)
                     {
                       if (imapData._saveDecodedHTML)
-                        filepath += IMAP_CMD35;
+                        filepath += STR_163;
                       else
-                        filepath += IMAP_CMD36;
+                        filepath += STR_164;
                     }
 
                     file = SD.open(filepath.c_str(), FILE_WRITE);
@@ -2021,15 +2200,15 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
                     {
                       imapData._messageDataInfo[mailIndex][messageDataIndex]._error = true;
                       imapData._messageDataInfo[mailIndex][messageDataIndex]._downloadError.clear();
-                      imapData._messageDataInfo[mailIndex][messageDataIndex]._downloadError = IMAP_MSG40;
+                      imapData._messageDataInfo[mailIndex][messageDataIndex]._downloadError = STR_89;
                     }
                   }
                 }
 
                 if (_sdOk)
                 {
-                  if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == IMAP_CMD27 && imapData._saveDecodedText ||
-                      imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == IMAP_CMD26 && imapData._saveDecodedHTML)
+                  if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == STR_155 && imapData._saveDecodedText ||
+                      imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == STR_154 && imapData._saveDecodedHTML)
                     file.write((const uint8_t *)decoded, outputLength);
                   else
                     file.write((const uint8_t *)lineBuf.c_str(), lineBuf.length());
@@ -2044,7 +2223,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
         if (validResponse && imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_ATTACHMENT && lfCount > 0)
         {
 
-          if (imapData._messageDataInfo[mailIndex][messageDataIndex]._transfer_encoding == IMAP_CMD32)
+          if (imapData._messageDataInfo[mailIndex][messageDataIndex]._transfer_encoding == STR_160)
           {
 
             if (!imapData._messageDataInfo[mailIndex][messageDataIndex]._sdFileOpenWrite)
@@ -2059,13 +2238,13 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
 
                 filepath.clear();
                 filepath += imapData._savePath;
-                filepath += IMAP_CMD75;
+                filepath += STR_202;
                 filepath += imapData._msgNum[mailIndex];
 
                 if (!SD.exists(filepath.c_str()))
                   SD.mkdir(filepath.c_str());
 
-                filepath += IMAP_CMD75;
+                filepath += STR_202;
 
                 filepath += imapData._messageDataInfo[mailIndex][messageDataIndex]._filename;
                 file = SD.open(filepath.c_str(), FILE_WRITE);
@@ -2076,7 +2255,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
                 {
                   imapData._messageDataInfo[mailIndex][messageDataIndex]._error = true;
                   imapData._messageDataInfo[mailIndex][messageDataIndex]._downloadError.clear();
-                  imapData._messageDataInfo[mailIndex][messageDataIndex]._downloadError = IMAP_MSG40;
+                  imapData._messageDataInfo[mailIndex][messageDataIndex]._downloadError = STR_89;
                 }
               }
             }
@@ -2094,7 +2273,6 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
                 {
                   imapData._downloadedByte[mailIndex] += outputLength;
                   currentDownloadByte += outputLength;
-
 
                   if (imapData._messageDataInfo[mailIndex][messageDataIndex]._size == 0)
                   {
@@ -2115,11 +2293,18 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
                     bool success = (p == 100);
                     if (imapData._readCallback && reportState != -1)
                     {
+                      memset(buf, 0, sizeof buf);
+                      itoa(p, buf, 10);
 
-                      String dl = IMAP_MSG41 + String(imapData._messageDataInfo[mailIndex][messageDataIndex]._filename.c_str()) + FPSTR(IMAP_MSG42) + String(p) + FPSTR(IMAP_MSG43);
+                      std::string dl = STR_90 + imapData._messageDataInfo[mailIndex][messageDataIndex]._filename + STR_91 + buf + STR_92;
 
                       if (imapData._readCallback)
-                        imapData._readCallback(ReadStatus(dl, dl, false));
+                      {
+                        cbData._info = dl;
+                        cbData._status = dl;
+                        cbData._success = false;
+                        imapData._readCallback(cbData);
+                      }
                     }
                     reportState = -1;
                   }
@@ -2142,7 +2327,6 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
         break;
 
       readCount++;
-
     }
 
     if (imapData._error.size() > 0 && mailIndex > -1)
@@ -2163,7 +2347,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
         {
           imapData._messageDataInfo[mailIndex][messageDataIndex]._error = true;
           imapData._messageDataInfo[mailIndex][messageDataIndex]._downloadError.clear();
-          imapData._messageDataInfo[mailIndex][messageDataIndex]._downloadError = IMAP_MSG44;
+          imapData._messageDataInfo[mailIndex][messageDataIndex]._downloadError = STR_93;
         }
       }
       else
@@ -2174,9 +2358,9 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
           imapData._error[mailIndex] = true;
           imapData._errorMsg[mailIndex].clear();
           if (WiFi.status() != WL_CONNECTED)
-            imapData._errorMsg[mailIndex] = IMAP_MSG45;
+            imapData._errorMsg[mailIndex] = STR_94;
           else
-            imapData._errorMsg[mailIndex] = IMAP_MSG46;
+            imapData._errorMsg[mailIndex] = STR_95;
         }
       }
     }
@@ -2193,78 +2377,80 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
     imapData._messageDataInfo[mailIndex][messageDataIndex]._size = currentDownloadByte;
   }
 
-  if (hpath != "") {
+  if (hpath != "")
+  {
 
     file = SD.open(hpath.c_str(), FILE_WRITE);
 
-    file.print(IMAP_MSG50);
+    file.print(STR_99);
     file.println(imapData._date[mailIndex].c_str());
 
-    file.print(IMAP_MSG51);
+    file.print(STR_100);
     if (imapData._uidSearch)
       file.println(imapData._msgNum[mailIndex].c_str());
-    else file.println();
+    else
+      file.println();
 
-    file.print(IMAP_MSG52);
+    file.print(STR_101);
     file.println(imapData._msgNum[mailIndex].c_str());
 
-    file.print(IMAP_MSG53);
+    file.print(STR_102);
     file.println(imapData._acceptLanguage[mailIndex].c_str());
 
-    file.print(IMAP_MSG54);
+    file.print(STR_103);
     file.println(imapData._contentLanguage[mailIndex].c_str());
 
-    file.print(IMAP_MSG55);
+    file.print(STR_104);
     file.println(imapData._from[mailIndex].c_str());
 
-    file.print(IMAP_MSG56);
+    file.print(STR_105);
     file.println(imapData._from_charset[mailIndex].c_str());
 
-    file.print(IMAP_MSG57);
+    file.print(STR_106);
     file.println(imapData._to[mailIndex].c_str());
 
-    file.print(IMAP_MSG58);
+    file.print(STR_107);
     file.println(imapData._to_charset[mailIndex].c_str());
 
-    file.print(IMAP_MSG59);
+    file.print(STR_108);
     file.println(imapData._cc[mailIndex].c_str());
 
-    file.print(IMAP_MSG60);
+    file.print(STR_109);
     file.println(imapData._cc_charset[mailIndex].c_str());
 
-    file.print(IMAP_MSG61);
+    file.print(STR_110);
     file.println(imapData._subject[mailIndex].c_str());
 
-    file.print(IMAP_MSG61);
+    file.print(STR_111);
     file.println(imapData._subject_charset[mailIndex].c_str());
 
-    file.print(IMAP_MSG62);
+    file.print(STR_112);
     file.println(imapData._messageDataInfo[mailIndex][messageDataIndex]._charset.c_str());
 
     if (imapData._attachmentCount[mailIndex] > 0)
     {
 
-      file.print(IMAP_MSG63);
+      file.print(STR_113);
       file.println(imapData._attachmentCount[mailIndex]);
 
       for (int j = 0; j < imapData._attachmentCount[mailIndex]; j++)
       {
-        file.print(IMAP_MSG64);
+        file.print(STR_114);
         file.println(j + 1);
 
-        file.print(IMAP_MSG65);
+        file.print(STR_115);
         file.println(imapData.getAttachmentFileName(mailIndex, j));
 
-        file.print(IMAP_MSG66);
+        file.print(STR_116);
         file.println(imapData.getAttachmentName(mailIndex, j));
 
-        file.print(IMAP_MSG67);
+        file.print(STR_117);
         file.println(imapData.getAttachmentFileSize(mailIndex, j));
 
-        file.print(IMAP_MSG68);
+        file.print(STR_118);
         file.println(imapData.getAttachmentType(mailIndex, j));
 
-        file.print(IMAP_MSG69);
+        file.print(STR_119);
         file.println(imapData.getAttachmentCreationDate(mailIndex, j));
       }
     }
@@ -2277,7 +2463,6 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
   std::string().swap(msgNumBuf);
   std::string().swap(filepath);
   std::string().swap(hpath);
-
 
   return validResponse;
 }
@@ -2653,11 +2838,11 @@ void IMAPData::setFechUID(const String fetchUID)
   _fetchUID.clear();
   string tmp = fetchUID.c_str();
   std::transform(tmp.begin(), tmp.end(), tmp.begin(), ::toupper);
-  if (tmp.find("UID") != std::string::npos || tmp.find("FLAGS") != std::string::npos ||
-      tmp.find("BODY") != std::string::npos || tmp.find("PEEK") != std::string::npos || tmp.find("TEXT") != std::string::npos ||
-      tmp.find("HEADER") != std::string::npos || tmp.find("FIELDS") != std::string::npos || tmp.find("[") != std::string::npos ||
-      tmp.find("]") != std::string::npos || tmp.find("MIME") != std::string::npos)
-    _fetchUID = "*";
+  if (tmp.find(STR_140) != std::string::npos || tmp.find(STR_212) != std::string::npos ||
+      tmp.find(STR_213) != std::string::npos || tmp.find(STR_214) != std::string::npos || tmp.find(STR_215) != std::string::npos ||
+      tmp.find(STR_216) != std::string::npos || tmp.find(STR_217) != std::string::npos || tmp.find(STR_218) != std::string::npos ||
+      tmp.find(STR_219) != std::string::npos || tmp.find(STR_220) != std::string::npos)
+    _fetchUID = STR_183;
   else
     _fetchUID = fetchUID.c_str();
 
@@ -2686,7 +2871,8 @@ void IMAPData::setHeaderOnly(bool headerOnly)
   _headerOnly = headerOnly;
 }
 
-void IMAPData::setSearchLimit(uint16_t limit) {
+void IMAPData::setSearchLimit(uint16_t limit)
+{
   _emailNumMax = limit;
 }
 bool IMAPData::isHeaderOnly()
@@ -2722,8 +2908,8 @@ uint16_t IMAPData::getFolderCount()
 String IMAPData::getFolder(uint16_t folderIndex)
 {
   if (folderIndex < _folders.size())
-    return String(_folders[folderIndex].c_str());
-  return String();
+    return _folders[folderIndex].c_str();
+  return std::string().c_str();
 }
 
 uint16_t IMAPData::getFlagCount()
@@ -2733,8 +2919,8 @@ uint16_t IMAPData::getFlagCount()
 String IMAPData::getFlag(uint16_t flagIndex)
 {
   if (flagIndex < _flag.size())
-    return String(_flag[flagIndex].c_str());
-  return String();
+    return _flag[flagIndex].c_str();
+  return std::string().c_str();
 }
 
 size_t IMAPData::totalMessages()
@@ -2769,19 +2955,19 @@ String IMAPData::getAttachmentFileName(size_t messageIndex, size_t attachmentInd
     {
       for (int i = 0; i < s; i++)
       {
-        if (_messageDataInfo[messageIndex][i]._disposition == IMAP_CMD25)
+        if (_messageDataInfo[messageIndex][i]._disposition == STR_153)
         {
           if (attachmentIndex == id)
-            return String(_messageDataInfo[messageIndex][i]._filename.c_str());
+            return _messageDataInfo[messageIndex][i]._filename.c_str();
           id++;
         }
       }
     }
     else
-      return String();
+      return std::string().c_str();
   }
   else
-    return String();
+    return std::string().c_str();
 }
 
 String IMAPData::getAttachmentName(size_t messageIndex, size_t attachmentIndex)
@@ -2794,19 +2980,19 @@ String IMAPData::getAttachmentName(size_t messageIndex, size_t attachmentIndex)
     {
       for (int i = 0; i < s; i++)
       {
-        if (_messageDataInfo[messageIndex][i]._disposition == IMAP_CMD25)
+        if (_messageDataInfo[messageIndex][i]._disposition == STR_153)
         {
           if (attachmentIndex == id)
-            return String(_messageDataInfo[messageIndex][i]._name.c_str());
+            return _messageDataInfo[messageIndex][i]._name.c_str();
           id++;
         }
       }
     }
     else
-      return String();
+      return std::string().c_str();
   }
   else
-    return String();
+    return std::string().c_str();
 }
 int IMAPData::getAttachmentFileSize(size_t messageIndex, size_t attachmentIndex)
 {
@@ -2818,7 +3004,7 @@ int IMAPData::getAttachmentFileSize(size_t messageIndex, size_t attachmentIndex)
     {
       for (int i = 0; i < s; i++)
       {
-        if (_messageDataInfo[messageIndex][i]._disposition == IMAP_CMD25)
+        if (_messageDataInfo[messageIndex][i]._disposition == STR_153)
         {
           if (attachmentIndex == id)
             return _messageDataInfo[messageIndex][i]._size;
@@ -2842,19 +3028,19 @@ String IMAPData::getAttachmentCreationDate(size_t messageIndex, size_t attachmen
     {
       for (int i = 0; i < s; i++)
       {
-        if (_messageDataInfo[messageIndex][i]._disposition == IMAP_CMD25)
+        if (_messageDataInfo[messageIndex][i]._disposition == STR_153)
         {
           if (attachmentIndex == id)
-            return String(_messageDataInfo[messageIndex][i]._creation_date.c_str());
+            return _messageDataInfo[messageIndex][i]._creation_date.c_str();
           id++;
         }
       }
     }
     else
-      return String();
+      return std::string().c_str();
   }
   else
-    return String();
+    return std::string().c_str();
 }
 
 String IMAPData::getAttachmentType(size_t messageIndex, size_t attachmentIndex)
@@ -2867,54 +3053,54 @@ String IMAPData::getAttachmentType(size_t messageIndex, size_t attachmentIndex)
     {
       for (int i = 0; i < s; i++)
       {
-        if (_messageDataInfo[messageIndex][i]._disposition == IMAP_CMD25)
+        if (_messageDataInfo[messageIndex][i]._disposition == STR_153)
         {
           if (attachmentIndex == id)
-            return String(_messageDataInfo[messageIndex][i]._contentType.c_str());
+            return _messageDataInfo[messageIndex][i]._contentType.c_str();
           id++;
         }
       }
     }
     else
-      return String();
+      return std::string().c_str();
   }
   else
-    return String();
+    return std::string().c_str();
 }
 
 String IMAPData::getFrom(uint16_t messageIndex)
 {
-  return String(_from[messageIndex].c_str());
+  return _from[messageIndex].c_str();
 }
 
 String IMAPData::getFromCharset(uint16_t messageIndex)
 {
-  return String(_from_charset[messageIndex].c_str());
+  return _from_charset[messageIndex].c_str();
 }
 String IMAPData::getTo(uint16_t messageIndex)
 {
-  return String(_to[messageIndex].c_str());
+  return _to[messageIndex].c_str();
 }
 String IMAPData::getToCharset(uint16_t messageIndex)
 {
-  return String(_to_charset[messageIndex].c_str());
+  return _to_charset[messageIndex].c_str();
 }
 String IMAPData::getCC(uint16_t messageIndex)
 {
-  return String(_cc[messageIndex].c_str());
+  return _cc[messageIndex].c_str();
 }
 String IMAPData::getCCCharset(uint16_t messageIndex)
 {
-  return String(_cc_charset[messageIndex].c_str());
+  return _cc_charset[messageIndex].c_str();
 }
 
 String IMAPData::getSubject(uint16_t messageIndex)
 {
-  return String(_subject[messageIndex].c_str());
+  return _subject[messageIndex].c_str();
 }
 String IMAPData::getSubjectCharset(uint16_t messageIndex)
 {
-  return String(_subject_charset[messageIndex].c_str());
+  return _subject_charset[messageIndex].c_str();
 }
 String IMAPData::getHTMLMessage(uint16_t messageIndex)
 {
@@ -2936,18 +3122,18 @@ String IMAPData::getMessage(uint16_t messageIndex, bool htmlFormat)
     {
       for (int i = 0; i < s; i++)
       {
-        if (_messageDataInfo[messageIndex][i]._contentType == IMAP_CMD27 && !htmlFormat)
-          return String(_messageDataInfo[messageIndex][i]._text.c_str());
-        else if (_messageDataInfo[messageIndex][i]._contentType == IMAP_CMD26 && htmlFormat)
-          return String(_messageDataInfo[messageIndex][i]._text.c_str());
+        if (_messageDataInfo[messageIndex][i]._contentType == STR_155 && !htmlFormat)
+          return _messageDataInfo[messageIndex][i]._text.c_str();
+        else if (_messageDataInfo[messageIndex][i]._contentType == STR_154 && htmlFormat)
+          return _messageDataInfo[messageIndex][i]._text.c_str();
       }
-      return String();
+      return std::string().c_str();
     }
     else
-      return String();
+      return std::string().c_str();
   }
   else
-    return String();
+    return std::string().c_str();
 }
 
 String IMAPData::getHTMLMessgaeCharset(uint16_t messageIndex)
@@ -2960,16 +3146,16 @@ String IMAPData::getHTMLMessgaeCharset(uint16_t messageIndex)
     {
       for (int i = 0; i < s; i++)
       {
-        if (_messageDataInfo[messageIndex][i]._contentType == IMAP_CMD26)
-          return String(_messageDataInfo[messageIndex][i]._charset.c_str());
+        if (_messageDataInfo[messageIndex][i]._contentType == STR_154)
+          return _messageDataInfo[messageIndex][i]._charset.c_str();
       }
-      return String();
+      return std::string().c_str();
     }
     else
-      return String();
+      return std::string().c_str();
   }
   else
-    return String();
+    return std::string().c_str();
 }
 
 String IMAPData::getTextMessgaeCharset(uint16_t messageIndex)
@@ -2982,56 +3168,60 @@ String IMAPData::getTextMessgaeCharset(uint16_t messageIndex)
     {
       for (int i = 0; i < s; i++)
       {
-        if (_messageDataInfo[messageIndex][i]._contentType == IMAP_CMD27)
-          return String(_messageDataInfo[messageIndex][i]._charset.c_str());
+        if (_messageDataInfo[messageIndex][i]._contentType == STR_155)
+          return _messageDataInfo[messageIndex][i]._charset.c_str();
       }
-      return String();
+      return std::string().c_str();
     }
     else
-      return String();
+      return std::string().c_str();
   }
   else
-    return String();
+    return std::string().c_str();
 }
 
 String IMAPData::getDate(uint16_t messageIndex)
 {
-  return String(_date[messageIndex].c_str());
+  return _date[messageIndex].c_str();
 }
 
 String IMAPData::getUID(uint16_t messageIndex)
 {
   if (_uidSearch)
-    return String(_msgNum[messageIndex].c_str());
-  return String();
+    return _msgNum[messageIndex].c_str();
+  return std::string().c_str();
 }
 
 String IMAPData::getNumber(uint16_t messageIndex)
 {
-  if (!_uidSearch)
-    return String(_msgNum[messageIndex].c_str());
 
-  return String(messageIndex + 1);
+  if (!_uidSearch)
+    return _msgNum[messageIndex].c_str();
+
+  char buf[50];
+  memset(buf, 0, sizeof buf);
+  itoa(messageIndex + 1, buf, 10);
+  return buf;
 }
 
 String IMAPData::getMessageID(uint16_t messageIndex)
 {
   if (messageIndex < _msgNum.size())
-    return String(_msgID[messageIndex].c_str());
-  return String();
+    return _msgID[messageIndex].c_str();
+  return std::string().c_str();
 }
 
 String IMAPData::getAcceptLanguage(uint16_t messageIndex)
 {
   if (messageIndex < _msgNum.size())
-    return String(_acceptLanguage[messageIndex].c_str());
-  return String();
+    return _acceptLanguage[messageIndex].c_str();
+  return std::string().c_str();
 }
 String IMAPData::getContentLanguage(uint16_t messageIndex)
 {
   if (messageIndex < _msgNum.size())
-    return String(_contentLanguage[messageIndex].c_str());
-  return String();
+    return _contentLanguage[messageIndex].c_str();
+  return std::string().c_str();
 }
 
 bool IMAPData::isFetchMessageFailed(uint16_t messageIndex)
@@ -3043,8 +3233,8 @@ bool IMAPData::isFetchMessageFailed(uint16_t messageIndex)
 String IMAPData::getFetchMessageFailedReason(uint16_t messageIndex)
 {
   if (messageIndex < _msgNum.size())
-    return String(_errorMsg[messageIndex].c_str());
-  return String();
+    return _errorMsg[messageIndex].c_str();
+  return std::string().c_str();
 }
 
 bool IMAPData::isDownloadAttachmentFailed(uint16_t messageIndex, size_t attachmentIndex)
@@ -3057,7 +3247,7 @@ bool IMAPData::isDownloadAttachmentFailed(uint16_t messageIndex, size_t attachme
     {
       for (int i = 0; i < s; i++)
       {
-        if (_messageDataInfo[messageIndex][i]._disposition == IMAP_CMD25)
+        if (_messageDataInfo[messageIndex][i]._disposition == STR_153)
         {
           if (attachmentIndex == id)
             return _messageDataInfo[messageIndex][i]._error;
@@ -3081,19 +3271,19 @@ String IMAPData::getDownloadAttachmentFailedReason(uint16_t messageIndex, size_t
     {
       for (int i = 0; i < s; i++)
       {
-        if (_messageDataInfo[messageIndex][i]._disposition == IMAP_CMD25)
+        if (_messageDataInfo[messageIndex][i]._disposition == STR_153)
         {
           if (attachmentIndex == id)
-            return String(_messageDataInfo[messageIndex][i]._downloadError.c_str());
+            return _messageDataInfo[messageIndex][i]._downloadError.c_str();
           id++;
         }
       }
     }
     else
-      return String();
+      return std::string().c_str();
   }
   else
-    return String();
+    return std::string().c_str();
 }
 
 bool IMAPData::isDownloadMessageFailed(uint16_t messageIndex)
@@ -3137,17 +3327,17 @@ String IMAPData::getDownloadMessageFailedReason(uint16_t messageIndex)
         }
       }
 
-      return String(res.c_str());
+      return res.c_str();
     }
     else
-      return String();
+      return std::string().c_str();
   }
   else
-    return String();
+    return std::string().c_str();
 }
 
-void IMAPData::empty() {
-
+void IMAPData::empty()
+{
   std::string().swap(_host);
   std::string().swap(_loginEmail);
   std::string().swap(_loginPassword);
@@ -3192,7 +3382,7 @@ messageBodyData::~messageBodyData()
   std::string().swap(_descr);
   std::string().swap(_transfer_encoding);
   std::string().swap(_creation_date);
-  std::string().swap(_modification_date);  
+  std::string().swap(_modification_date);
   std::string().swap(_downloadError);
   std::string().swap(_charset);
   std::string().swap(_part);
@@ -3256,12 +3446,12 @@ void attachmentData::free()
 
 String attachmentData::getFileName(uint8_t index)
 {
-  return String(_filename[index].c_str());
+  return _filename[index].c_str();
 }
 
 String attachmentData::getMimeType(uint8_t index)
 {
-  return String(_mime_type[index].c_str());
+  return _mime_type[index].c_str();
 }
 
 uint8_t *attachmentData::getData(uint8_t index)
@@ -3287,7 +3477,8 @@ uint8_t attachmentData::getType(uint8_t index)
 
 SMTPData::SMTPData() {}
 
-SMTPData::~SMTPData() {
+SMTPData::~SMTPData()
+{
   empty();
 }
 
@@ -3316,12 +3507,12 @@ void SMTPData::setSender(const String &fromName, const String &senderEmail)
 
 String SMTPData::getFromName()
 {
-  return String(_fromName.c_str());
+  return _fromName.c_str();
 }
 
 String SMTPData::getSenderEmail()
 {
-  return String(_senderEmail.c_str());
+  return _senderEmail.c_str();
 }
 
 void SMTPData::setPriority(int priority)
@@ -3330,11 +3521,11 @@ void SMTPData::setPriority(int priority)
 }
 void SMTPData::setPriority(const String &priority)
 {
-  if (priority == "high" || priority == "High")
+  if (priority == STR_205 || priority == STR_206)
     _priority = 1;
-  else if (priority == "normal" || priority == "Normal")
+  else if (priority == STR_207 || priority == STR_208)
     _priority = 3;
-  else if (priority == "low" || priority == "Low")
+  else if (priority == STR_209 || priority == STR_210)
     _priority = 5;
 }
 
@@ -3351,7 +3542,7 @@ void SMTPData::addRecipient(const String &email)
 void SMTPData::removeRecipient(const String &email)
 {
   for (uint8_t i = 0; i < _recipient.size(); i++)
-    if (String(_recipient[i].c_str()) == email)
+    if (_recipient[i].c_str() == email.c_str())
       _recipient.erase(_recipient.begin() + i);
 }
 
@@ -3373,8 +3564,8 @@ uint8_t SMTPData::recipientCount()
 String SMTPData::getRecipient(uint8_t index)
 {
   if (index >= _recipient.size())
-    return String();
-  return String(_recipient[index].c_str());
+    return std::string().c_str();
+  return _recipient[index].c_str();
 }
 
 void SMTPData::setSubject(const String &subject)
@@ -3384,7 +3575,7 @@ void SMTPData::setSubject(const String &subject)
 
 String SMTPData::getSubject()
 {
-  return String(_subject.c_str());
+  return _subject.c_str();
 }
 
 void SMTPData::setMessage(const String &message, bool htmlFormat)
@@ -3396,7 +3587,7 @@ void SMTPData::setMessage(const String &message, bool htmlFormat)
 
 String SMTPData::getMessage()
 {
-  return String(_message.c_str());
+  return _message.c_str();
 }
 
 bool SMTPData::htmlFormat()
@@ -3411,7 +3602,7 @@ void SMTPData::addCC(const String &email)
 void SMTPData::removeCC(const String &email)
 {
   for (uint8_t i = 0; i < _cc.size(); i++)
-    if (String(_cc[i].c_str()) == email)
+    if (_cc[i].c_str() == email.c_str())
       _cc.erase(_cc.begin() + i);
 }
 
@@ -3432,8 +3623,8 @@ uint8_t SMTPData::ccCount()
 String SMTPData::getCC(uint8_t index)
 {
   if (index >= _cc.size())
-    return String();
-  return String(_cc[index].c_str());
+    return std::string().c_str();
+  return _cc[index].c_str();
 }
 
 void SMTPData::addBCC(const String &email)
@@ -3444,7 +3635,7 @@ void SMTPData::addBCC(const String &email)
 void SMTPData::removeBCC(const String &email)
 {
   for (uint8_t i = 0; i < _bcc.size(); i++)
-    if (String(_bcc[i].c_str()) == email)
+    if (_bcc[i].c_str() == email.c_str())
       _bcc.erase(_bcc.begin() + i);
 }
 
@@ -3466,8 +3657,8 @@ uint8_t SMTPData::bccCount()
 String SMTPData::getBCC(uint8_t index)
 {
   if (index >= _bcc.size())
-    return String();
-  return String(_bcc[index].c_str());
+    return std::string().c_str();
+  return _bcc[index].c_str();
 }
 
 void SMTPData::addAttachData(const String &fileName, const String &mimeType, uint8_t *data, uint16_t size)
@@ -3587,40 +3778,53 @@ void SMTPData::setSendCallback(sendStatusCallback sendCallback)
   _sendCallback = sendCallback;
 }
 
-ReadStatus::ReadStatus(const String info, String status, bool success)
+ReadStatus::ReadStatus()
 {
-  _info = info;
-  _status = status;
-  _success = success;
+}
+ReadStatus::~ReadStatus()
+{
+  empty();
 }
 
 String ReadStatus::status()
 {
-  return _status;
+  return _status.c_str();
 }
 String ReadStatus::info()
 {
-  return _info;
+  return _info.c_str();
 }
 
 bool ReadStatus::success()
 {
   return _success;
 }
-
-SendStatus::SendStatus(const String info, bool success)
+void ReadStatus::empty()
 {
-  _info = info;
-  _success = success;
+  std::string().swap(_info);
+  std::string().swap(_status);
+}
+
+SendStatus::SendStatus()
+{
+}
+
+SendStatus::~SendStatus()
+{
+  empty();
 }
 
 String SendStatus::info()
 {
-  return _info;
+  return _info.c_str();
 }
 bool SendStatus::success()
 {
   return _success;
+}
+void SendStatus::empty()
+{
+  std::string().swap(_info);
 }
 
 ESP32_MailClient MailClient = ESP32_MailClient();
