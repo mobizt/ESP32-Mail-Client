@@ -1,30 +1,37 @@
-# Email Client Arduino Library for ESP32 v 1.0.1
+# Mail Client Arduino Library for ESP32 v 1.0.2
 
-This library provides ESP32 to send/receive Email with or without attachment through the SMTP/IMAP mail server. 
+This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
 
 The library was test and work well with ESP32s based module.
 
 Copyright (c) 2019 K. Suwatchai (Mobizt).
 
+
 ## Tested Devices
 
-This library works well in the following tested devices.
+This following devices were tested and work well.
 
  * Sparkfun ESP32 Thing
  * NodeMCU-32
  * WEMOS LOLIN32
+
+
  
 ## Features
 
-Able to send Email with large file attachment.
+Support Email sending with or without attachment through IMAP server.
 
-Able to receive Emails, download and save messages and attachments to SD card.
+Working with SD card allows large file attachment supported.
 
-Support large file attachment to send Email or download from received Email.
+Support Email reading (fetch) with or without attachment doqnloads.
 
-Able to search Email using IMAP command as in RFC 3501 (depending on IMAP server implementation). 
+Support large attachment download using SD card.
 
-Fetch Email is stricted to accept only message UID.
+Message text and its header are able to download and save to SD card.
+
+Support Email message fetch and search using IMAP command as in RFC 3501 (depending on IMAP server implementation).
+
+
 
 ## Known Issues
 
@@ -42,838 +49,1390 @@ To send Email using Gmail outgoing Email service, less secure app option should 
 To receive Email using Gmail incoming Email service, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
 
 
-## Supported functions
 
+
+## All Supported Functions
+
+
+**These are all functions available from the library and the descriptions.**
+
+
+__Global functions__
+
+
+**Sending Email through SMTP server.**
+
+param *`http`* - HTTPClientESP32Ex WiFi client.
+
+param *`smtpData`* - SMTP Data object to hold data and instances.
+
+return - *`Boolean`* type status indicates the success of operation.
+
+```C++
+bool sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData);
 ```
-    /*
-    *
-    * Send Email
-    * 
-    *\param http - HTTPClientESP32Ex WiFi client.
-    *\param smtpData - SMTPData contains all information of Email.
-    *\return The sending status. True for success sending and False for failed sending.
-    */
-    bool sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData);
 
-    /*
-    *
-    * Read Email
-    * 
-    *\param http - HTTPClientESP32Ex WiFi client.
-    *\param imapData - IMAPData that contains all read information.
-    *\return The reading return status. True for finished reading and False for failed reading.
-    */
-    bool readMail(HTTPClientESP32Ex &http, IMAPData &imapData);
 
-    /*
-    *Return the Email sending error reason
-    *
-    *\return error String.
-    */
-    String smtpErrorReason();
 
-    /*
-    * Return the Email receive error reason
-    * 
-    * \return error String.
-    */
-    String imapErrorReason();
-    
 
+**Reading Email through IMAP server.**
+
+param *`http`* - HTTPClientESP32Ex WiFi client.
+
+param *`imapData`* - IMAP Data object to hold data and instances.
+
+return - *`Boolean`* type status indicates the success of operation.
+
+```C++
+bool readMail(HTTPClientESP32Ex &http, IMAPData &imapData);
 ```
-    
+
+
+
+
+**Get the Email sending error details.**
+
+return - *`Error details string (String object).`*
+
+```C++
+String smtpErrorReason();
+```
+
+
+
+
+**Get the Email reading error details.**
+
+return - *`Error details string (String object).`*
+
+```C++
+String imapErrorReason();
+```
+
+
+
+
 ### IMAPData object call for receiving Email.
 
+
+**Set the IMAP server login credentials.**
+
+param *`host`* - IMAP server e.g. imap.gmail.com.
+
+param *`port`* - IMAP port e.g. 993 for gmail.
+
+param *`loginEmail`* - The Email address of account.
+
+param *`loginPassword`* - The account password.
+
+```C++
+void setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword);
 ```
 
-    /*
-    *Set IMAP login credentials
-    * 
-    *\param host - IMAP server e.g. imap.gmail.com.
-    *\param port - IMAP port e.g. 993 for gmail.
-    *\param loginEmail - The account Email.
-    *\param loginPassword - The account password.
-    */
-    void setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword);
-
-   /*
-    *Set Folder or path of mailbox
-    * 
-    *\param folderName - known mailbox folder.
-    *
-    * The default folder is INBOX
-    */
-    void setFolder(const String folderName);
-
-   /*
-    *Set maximum message buffer size that the plain text or html message can be collected.
-    * 
-    *\param size - the message size in byte.
-    */
-    void setMessageBufferSize(size_t size);
-
-    /*
-    *Set maximum size of attachment file size that can be download.
-    * 
-    *\param size - the attachement file size in byte.
-    */
-    void setAttachmentSizeLimit(size_t size);
-
-    /*
-    *Set the search criteria to search in selected mailbox.
-    * 
-    *\param criteria - the search criteria String.
-    *
-    * If folder is not set, the INBOX folder will be selected
-    * Example:
-    * "SINCE 10-Feb-2019" will search all messages that received since 10 Feb 2019
-    * "UID SEARCH ALL" will seach all message which will return the message UID that can be use later for fetch one or more messages.
-    * 
-    *  
-    *  Search criteria can be consisted these keywords
-    * 
-    * ALL - All messages in the mailbox; the default initial key for	ANDing.
-    * ANSWERED - Messages with the \Answered flag set.
-    * BCC - Messages that contain the specified string in the envelope structure's BCC field.
-    * BEFORE - Messages whose internal date (disregarding time and timezone) is earlier than the specified date.
-    * BODY - Messages that contain the specified string in the body of the	message.
-    * CC - Messages that contain the specified string in the envelope structure's CC field.
-    * DELETED - Messages with the \Deleted flag set.
-    * DRAFT - Messages with the \Draft flag set.
-    * FLAGGED - Messages with the \Flagged flag set.
-    * FROM - Messages that contain the specified string in the envelope	structure's FROM field.
-    * HEADER - Messages that have a header with the specified field-name (as defined in [RFC-2822]) 
-    * and that contains the specified string	in the text of the header (what comes after the colon).  
-    * If the string to search is zero-length, this matches all messages that have a header line with 
-    * the specified field-name regardless of	the contents.
-    * KEYWORD - Messages with the specified keyword flag set.
-    * LARGER - Messages with an [RFC-2822] size larger than the specified number of octets.
-    * NEW -  Messages that have the \Recent flag set but not the \Seen flag.
-    * This is functionally equivalent to "(RECENT UNSEEN)".
-    * NOT - Messages that do not match the specified search key.
-    * OLD - Messages that do not have the \Recent flag set.  This is	functionally equivalent to
-    * "NOT RECENT" (as opposed to "NOT	NEW").
-    * ON - Messages whose internal date (disregarding time and timezone) is within the specified date.
-    * OR - Messages that match either search key.
-    * RECENT - Messages that have the \Recent flag set.
-    * SEEN - Messages that have the \Seen flag set.
-    * SENTBEFORE - Messages whose [RFC-2822] Date: header (disregarding time and	timezone) is earlier than the specified date.
-    * SENTON - Messages whose [RFC-2822] Date: header (disregarding time and timezone) is within the specified date.
-    * SENTSINCE - Messages whose [RFC-2822] Date: header (disregarding time and timezone) is within or later than the specified date.
-    * SINCE - Messages whose internal date (disregarding time and timezone) is within or later than the specified date.
-    * SMALLER - Messages with an [RFC-2822] size smaller than the specified number of octets.
-    * SUBJECT - Messages that contain the specified string in the envelope structure's SUBJECT field.
-    * TEXT - Messages that contain the specified string in the header or body of the message.
-    * TO - Messages that contain the specified string in the envelope structure's TO field.
-    * UID - Messages with unique identifiers corresponding to the specified unique identifier set.  
-    * Sequence set ranges are permitted.
-    * UNANSWERED - Messages that do not have the \Answered flag set.
-    * UNDELETED - Messages that do not have the \Deleted flag set.
-    * UNDRAFT - Messages that do not have the \Draft flag set.
-    * UNFLAGGED - Messages that do not have the \Flagged flag set.
-    * UNKEYWORD - Messages that do not have the specified keyword flag set.
-    * UNSEEN - Messages that do not have the \Seen flag set.
-    */
-    void setSearchCriteria(const String criteria);
-
-    /*
-    *Set save/download file path.
-    * 
-    *\param path - the folder or path in SD card.
-    *
-    * All saved text message files and attachemnts will be save inside and in message UID or message number folder
-    */
-    void setSaveFilePath(const String path);
-
-    /*
-    *Set UID of known message to fetch or read.
-    * 
-    *\param fetchUID - the message UID, only UID and should not contain any IMAP command and keyword.
-    */
-    void setFechUID(const String fetchUID);
-
-    /*
-    *Set to download attachment when fetch of receive Email.
-    * 
-    *\param download - True for download attachment.
-    */
-    void setDownloadAttachment(bool download);
-
-    /*
-    *Set to collect the html message.
-    * 
-    *\param htmlFormat - True to collect html message in IMAPData object result or save in SD card.
-    * The default value is false.
-    */    
-    void setHTMLMessage(bool htmlFormat);
-
-   /*
-    *Set to collect the plain text message.
-    * 
-    *\param textFormat - True to collect plain text message in IMAPData object result or save in SD card.
-    * The default value is true.
-    */  
-    void setTextMessage(bool textFormat);
-
-   /*
-    *Set to collect only message header no message text/html and attachment will read or download.
-    * 
-    *\param headerOnly - True to collect only header in IMAPData object result.
-    * The default value is true.
-    */  
-    void setHeaderOnly(bool headerOnly);
-
-   /*
-    *Set the serach result limit when search criteria is set.
-    * 
-    *\param limit - Any number from 0 to 65535.
-    */  
-    void setSearchLimit(uint16_t limit);
-
-   /*
-    *Set the serach result sorted order when search criteria is set.
-    * 
-    *\param recentSort - True for most recent message first.
-    */  
-    void setRecentSort(bool recentSort);
-
-   /*
-    *Set callback function to get the status while fetching or receiving message.
-    * 
-    *\param readCallback - The function that accept readStatusCallback as parameter.
-    */  
-    void setReadCallback(readStatusCallback readCallback);
-
-   /*
-    *Set when attachement download progress is required while fetching or receiving message.
-    * 
-    *\param report - True for report the progress.
-    * Callback function should be set by setReadCallback to accept the download status.
-    */ 
-    void setDownloadReport(bool report);
-
-    /*
-    *Set when only message header is required in the IMAPData result.
-    * 
-    *\This can be used when search criteria was set and only each message header was acquired in cluding message UID to be fetch later.
-    */ 
-    bool isHeaderOnly();
 
 
-    /*
-    *Get the sender name/Email for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return sender name/Email String.
-    */ 
-    String getFrom(uint16_t messageIndex);
+**Set the mailbox folder to search or fetch.**
 
-    /*
-    *Get the sender name/Email charactor encoding.
-    * 
-    *\param messageIndex - The index of message.
-    *\return sender name/Email charactor encoding which use in decoding to local language.
-    */ 
-    String getFromCharset(uint16_t messageIndex);
+param *`folderName`* - Known mailbox folder. Default value is INBOX
 
-    /*
-    *Get the recipient name/Email for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return recipient name/Email String.
-    */ 
-    String getTo(uint16_t messageIndex);
-
-    /*
-    *Get the recipient name/Email charactor encoding.
-    * 
-    *\param messageIndex - The index of message.
-    *\return recipient name/Email charactor encoding which use in decoding to local language.
-    */ 
-    String getToCharset(uint16_t messageIndex);
-
-    /*
-    *Get the CC name/Email for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return CC name/Email String.
-    */ 
-    String getCC(uint16_t messageIndex);
-
-    /*
-    *Get the CC name/Email charactor encoding.
-    * 
-    *\param messageIndex - The index of message.
-    *\return CC name/Email charactor encoding which use in decoding to local language.
-    */ 
-    String getCCCharset(uint16_t messageIndex);
-
-    /*
-    *Get the message subject for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return message subject name/Email String.
-    */
-    String getSubject(uint16_t messageIndex);
-
-    /*
-    *Get the message subject charactor encoding.
-    * 
-    *\param messageIndex - The index of message.
-    *\return message subject charactor encoding which use in decoding to local language.
-    */ 
-    String getSubjectCharset(uint16_t messageIndex);
-
-    /*
-    *Get the html message for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return html message String or empty String upon the setHTMLMessage was set.
-    */
-    String getHTMLMessage(uint16_t messageIndex);
-
-    /*
-    *Get the plain text message for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return plain text message String or empty String upon the setTextMessage was set.
-    */
-    String getTextMessage(uint16_t messageIndex);
-
-    /*
-    *Get the html message charactor encoding.
-    * 
-    *\param messageIndex - The index of message.
-    *\return html message charactor encoding which use in decoding to local language.
-    */ 
-    String getHTMLMessgaeCharset(uint16_t messageIndex);
-
-    /*
-    *Get the text message charactor encoding.
-    * 
-    *\param messageIndex - The index of message.
-    *\return text message charactor encoding which use in decoding to local language.
-    */ 
-    String getTextMessgaeCharset(uint16_t messageIndex);
-
-    /*
-    *Get the date of received message for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return date String.
-    */ 
-    String getDate(uint16_t messageIndex);
-
-    /*
-    *Get the message UID for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return UID String that can be use in setFechUID.
-    */ 
-    String getUID(uint16_t messageIndex);
-
-    /*
-    *Get the message number for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return message number which vary upon search criteria and sorting.
-    */ 
-    String getNumber(uint16_t messageIndex);
-
-    /*
-    *Get the message ID for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return message ID String.
-    */ 
-    String getMessageID(uint16_t messageIndex);
-
-    /*
-    *Get the accept language for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return accept language String.
-    */ 
-    String getAcceptLanguage(uint16_t messageIndex);
-
-    /*
-    *Get the content language of text or html for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return content language String.
-    */
-    String getContentLanguage(uint16_t messageIndex);
-
-    /*
-    *Use when checking the fetch error for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return fetch status, True for fetch status for that selected message was failed.
-    */
-    bool isFetchMessageFailed(uint16_t messageIndex);
-
-    /*
-    *Return the fetch error reason for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return fetch error reason String for selected message index.
-    */
-    String getFetchMessageFailedReason(uint16_t messageIndex);
-
-    /*
-    *Use when checking the attachment download error for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return fetch status, True for error in attachment download for that selected message.
-    */
-    bool isDownloadAttachmentFailed(uint16_t messageIndex, size_t attachmentIndex);
-
-    /*
-    *Return the attachment download error reason for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return download error reason String for selected message index.
-    */
-    String getDownloadAttachmentFailedReason(uint16_t messageIndex, size_t attachmentIndex);
-
-   /*
-    *Use when checking the downloaded/saved text message error for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return text message download status, True for error in downloading message.
-    * The text or html message download can be set by call IMAPData.saveHTMLMessage or IMAPData.saveTextMessage
-    */
-    bool isDownloadMessageFailed(uint16_t messageIndex);
-
-    /*
-    *Return the attachment downloaded/saved text message error reason for selected message index of IMAPData result.
-    * 
-    *\param messageIndex - The index of message.
-    *\return downloaded/saved text message error reason String for selected message index.
-    */
-    String getDownloadMessageFailedReason(uint16_t messageIndex);
-
-   /*
-    *Use when html message was need to be download or save in SD card.
-    * 
-    *\param save - True for saving html message.
-    *\param decoded - True for save in decode html format which support utf8 and base64 encoding.
-    */
-    void saveHTMLMessage(bool save, bool decoded);
-
-    /*
-    *Use when text message was need to be download or save in SD card.
-    * 
-    *\param save - True for saving text message.
-    *\param decoded - True for save in decode text format which support utf8 and base64 encoding.
-    */
-    void saveTextMessage(bool save, bool decoded);
-
-    /*
-    *Return the folder count.
-    */
-    uint16_t getFolderCount();
-
-    /*
-    *Return the folder name or path for selected index.
-    * 
-    *\param folderIndex - Index of folder.
-    *\return folder name or path String that can be use in setFolder call.
-    */
-    String getFolder(uint16_t folderIndex);
-
-    /*
-    *Return number of support flags for mailbox.
-    */
-    uint16_t getFlagCount();
-
-    /*
-    *Return the flag name for selected index.
-    * 
-    *\param folderIndex - Index of folder.
-    *\return flag name that supported by mailbox and can use for search criteria.
-    */
-    String getFlag(uint16_t flagIndex);
-
-   /*
-    *Return number of message in selected mailbox e.g. INBOX.
-    */
-    size_t totalMessages();
-
-    /*
-    *Return number of message from search result.
-    */
-    size_t searchCount();
-
-    /*
-    *Return number of message from search result which not exceed the search limit value that set by setSearchLimit.
-    */
-    size_t availableMessages();
-
-   /*
-    *Return number of attachment for selected message index.
-    *\param messageIndex - Index of message.
-    *\return number of attachment
-    */
-    size_t getAttachmentCount(uint16_t messageIndex);
-
-   /*
-    *Return file name of attachment for selected attachment index and message index.
-    *\param messageIndex - Index of message.
-    *\param attachmentIndex - Index of attachment.
-    *\return attachment file name String at the selected index
-    */
-    String getAttachmentFileName(size_t messageIndex, size_t attachmentIndex);
-
-   /*
-    *Return name of attachment for selected attachment index and message index.
-    *\param messageIndex - Index of message.
-    *\param attachmentIndex - Index of attachment.
-    *\return attachment name String at the selected index
-    */
-    String getAttachmentName(size_t messageIndex, size_t attachmentIndex);
-
-    /*
-    *Return size in byte of attachment file for selected attachment index and message index.
-    *\param messageIndex - Index of message.
-    *\param attachmentIndex - Index of attachment.
-    *\return attachment file size in byte at the selected index
-    */
-    int getAttachmentFileSize(size_t messageIndex, size_t attachmentIndex);
-
-    /*
-    *Return creation date of attachment for selected attachment index and message index.
-    *\param messageIndex - Index of message.
-    *\param attachmentIndex - Index of attachment.
-    *\return attachment creation date String at the selected index
-    */
-    String getAttachmentCreationDate(size_t messageIndex, size_t attachmentIndex);
-
-    /*
-    *Return type or file MIME of attachment for selected attachment index and message index.
-    *\param messageIndex - Index of message.
-    *\param attachmentIndex - Index of attachment.
-    *\return file MIME String at the selected index e.g. image/jpeg.
-    */
-    String getAttachmentType(size_t messageIndex, size_t attachmentIndex);
-
-
-    /*
-    *Use when to empty IMAPData object to clear content or no further use.
-    */
-    void empty();
-
+```C++
+void setFolder(const String &folderName);
 ```
+
+
+
+**Set the maximum message buffer size for text/html result from search or fetch the message.**
+
+param *`size`* - The message size in byte.
+
+```C++
+void setMessageBufferSize(size_t size);
+```
+
+
+
+**Set the maximum attachment file size to be downloaded.**
+
+param *`size`* - The attachement file size in byte.
+
+```C++
+void setAttachmentSizeLimit(size_t size);
+```
+
+
+
+**Set the search criteria used in selected mailbox search.**
+
+In case of message UID was set through setFechUID function, search operation will not process,
+
+you need to clear message UID by calling imapData.setFechUID("") to clear.
+
+param *`criteria`* - Search criteria String.
+
+If folder is not set, the INBOX folder will be used
+
+Example:
+
+*`SINCE 10-Feb-2019`*  will search all messages that received since 10 Feb 2019
+
+*`UID SEARCH ALL`*  will seach all message which will return the message UID that can be use later for fetch one or more messages.
+
+ 
+Search criteria can be consisted these keywords
+
+
+*`ALL`* - All messages in the mailbox; the default initial key for	ANDing.
+
+*`ANSWERED`* - Messages with the \Answered flag set.
+
+*`BCC`* - Messages that contain the specified string in the envelope structure's BCC field.
+
+*`BEFORE`* - Messages whose internal date (disregarding time and timezone) is earlier than the specified date.
+
+*`BODY`* - Messages that contain the specified string in the body of the message.
+
+*`CC`* - Messages that contain the specified string in the envelope structure's CC field.
+
+*`DELETED`* - Messages with the \Deleted flag set.
+
+*`DRAFT`* - Messages with the \Draft flag set.
+
+*`FLAGGED`* - Messages with the \Flagged flag set.
+
+*`FROM`* - Messages that contain the specified string in the envelope	structure's FROM field.
+
+*`HEADER`* - Messages that have a header with the specified field-name (as defined in [RFC-2822])
+
+and that contains the specified string	in the text of the header (what comes after the colon).
+
+If the string to search is zero-length, this matches all messages that have a header line with 
+
+the specified field-name regardless of	the contents.
+
+*`KEYWORD`* - Messages with the specified keyword flag set.
+
+*`LARGER`* - Messages with an (RFC-2822) size larger than the specified number of octets.
+
+*`NEW`* -  Messages that have the \Recent flag set but not the \Seen flag.
+
+This is functionally equivalent to `*"(RECENT UNSEEN)"*`.
+
+*`NOT`* - Messages that do not match the specified search key.
+
+*`OLD`* - Messages that do not have the \Recent flag set.  This is	functionally equivalent to
+
+*`"NOT RECENT"`* (as opposed to *`"NOT NEW"`*).
+
+*`ON`* - Messages whose internal date (disregarding time and timezone) is within the specified date.
+
+*`OR`* - Messages that match either search key.
+
+*`RECENT`* - Messages that have the \Recent flag set.
+
+*`SEEN`* - Messages that have the \Seen flag set.
+
+*`SENTBEFORE`* - Messages whose (RFC-2822) Date: header (disregarding time and	timezone) is earlier than the specified date.
+
+*`SENTON`* - Messages whose (RFC-2822) Date: header (disregarding time and timezone) is within the specified date.
+
+*`SENTSINCE`* - Messages whose (RFC-2822) Date: header (disregarding time and timezone) is within or later than the specified date.
+
+*`SINCE`* - Messages whose internal date (disregarding time and timezone) is within or later than the specified date.
+
+*`SMALLER`* - Messages with an (RFC-2822) size smaller than the specified number of octets.
+
+*`SUBJECT`* - Messages that contain the specified string in the envelope structure's SUBJECT field.
+
+*`TEXT`* - Messages that contain the specified string in the header or body of the message.
+
+*`TO`* - Messages that contain the specified string in the envelope structure's TO field.
+
+*`UID`* - Messages with unique identifiers corresponding to the specified unique identifier set.  
+
+Sequence set ranges are permitted.
+
+*`UNANSWERED`* - Messages that do not have the \Answered flag set.
+
+*`UNDELETED`* - Messages that do not have the \Deleted flag set.
+
+*`UNDRAFT`* - Messages that do not have the \Draft flag set.
+
+*`UNFLAGGED`* - Messages that do not have the \Flagged flag set.
+
+*`UNKEYWORD`* - Messages that do not have the specified keyword flag set.
+
+*`UNSEEN`* - Messages that do not have the \Seen flag set.
+
+```C++
+void setSearchCriteria(const String criteria);
+```
+
+
+
+**Set the download folder.**
+
+param *`path`* - Path in SD card.
+
+All text/html message and attachemnts will be saved to message UID folder which created in defined path
+
+e.g. *`"/{DEFINED_PATH}/{MESSAGE_UID}/{ATTACHMENT_FILE...}"`*.
+
+```C++
+void setSaveFilePath(const String path);
+```
+
+
+
+
+**Specify message UID to fetch or read.**
+
+param *`fetchUID`* - The message UID.
+
+Specify the message UID to fetch (read) only specific message instead of search.
+
+```C++
+void setFechUID(const String fetchUID);
+```
+
+
+
+
+**Enable/disable attachment download.**
+
+param *`download`* - Boolean flag to enable/disable attachment download.
+
+Also set setHeaderOnly function to false is needed.
+
+```C++
+void setDownloadAttachment(bool download);
+```
+
+
+
+**Enable/disable html message result.**
+
+param *`htmlFormat`* - Boolean flag to enable/disable html message result.
+
+Also set setHeaderOnly function to false is needed.
+
+The default value is false.
+
+```C++
+void setHTMLMessage(bool htmlFormat);
+```
+
+
+
+
+**Enable/disable plain text message result.**
+
+param *`textFormat`* - Boolean flag to enable/disable plain text message result.
+
+Also set setHeaderOnly function to false is needed.
+
+The default value is true.
+
+```C++
+void setTextMessage(bool textFormat);
+```
+
+
+
+
+**Enable/disable header only result.**
+
+Message body and attachment will be ignored during serach or read
+
+param *`headerOnly`* - Boolean flag to enable/disable header only result.
+
+The default value is true.
+
+```C++
+void setHeaderOnly(bool headerOnly);
+```
+
+
+
+
+**Set the maximum message to search.**
+
+param *`limit`* - Any number from 0 to 65535.
+
+The default value is 20.
+
+```C++
+void setSearchLimit(uint16_t limit);
+```
+
+
+
+**Enable/disable recent sort result.**
+
+param *`recentSort`* - Boolean flag to enable/disable recent message sort result.
+
+The default value is true.
+
+```C++
+void setRecentSort(bool recentSort);
+```
+
+
+
+**Assign callback function that return status of message fetching or reading.**
+
+param *`readCallback`* - The function that accept readStatusCallback as parameter.
+
+```C++
+void setReadCallback(readStatusCallback readCallback);
+```
+
+
+
+**Enable/disable attachement download progress while fetching or receiving message.**
+
+param *`report`* - Boolean flag to enable/disable attachement download progress while fetching or receiving message.
+
+To get the download status, Callback function should be set through setReadCallback.
+
+```C++
+void setDownloadReport(bool report);
+```
+
+
+
+**Determine only message header is return when search.**
+
+```C++
+bool isHeaderOnly();
+```
+
+
+
+**Get the sender name/Email for selected message from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Sender name/Email String.`*
+
+```C++
+String getFrom(uint16_t messageIndex);
+```
+
+
+
+**Get the sender name/Email charactor encoding.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Sender name/Email charactor encoding which use for decoding.`*
+
+```C++
+String getFromCharset(uint16_t messageIndex);
+```
+
+
+
+**Get the recipient name/Email for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Recipient name/Email String.`*
+
+```C++
+String getTo(uint16_t messageIndex);
+```
+
+
+
+
+**Get the recipient name/Email charactor encoding.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Recipient name/Email charactor encoding which use in decoding to local language.`*
+
+```C++
+String getToCharset(uint16_t messageIndex);
+```
+
+
+
+
+**Get the CC name/Email for selected message index of IMAPData result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`CC name/Email String.`*
+
+```C++
+String getCC(uint16_t messageIndex);
+```
+
+
+
+**Get the CC name/Email charactor encoding.**
+
+param *`messageIndex`* - The index of message.
+
+return *`CC name/Email charactor encoding which use in decoding to local language.`*
+
+```C++
+String getCCCharset(uint16_t messageIndex);
+```
+
+
+
+
+**Get the message subject for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Message subject name/Email String.`*
+
+```C++
+String getSubject(uint16_t messageIndex);
+```
+
+
+
+
+**Get the message subject charactor encoding.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Message subject charactor encoding which use in decoding to local language.`*
+
+```C++
+String getSubjectCharset(uint16_t messageIndex);
+```
+
+
+
+**Get the html message for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`The html message String or empty String upon the setHTMLMessage was set.`*
+
+```C++
+String getHTMLMessage(uint16_t messageIndex);
+```
+
+
+
+**Get the plain text message for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`The plain text message String or empty String upon the setTextMessage was set.`*
+
+```C++
+String getTextMessage(uint16_t messageIndex);
+```
+
+
+**Get the html message charactor encoding.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Html message charactor encoding which use in decoding to local language.`*
+
+```C++
+String getHTMLMessgaeCharset(uint16_t messageIndex);
+```
+
+
+
+
+**Get the text message charactor encoding.**
+
+param *`messageIndex`* - The index of message.
+
+return *`The text message charactor encoding which use in decoding to local language.`*
+
+```C++
+String getTextMessgaeCharset(uint16_t messageIndex);
+```
+
+
+
+
+**Get the date of received message for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`The date String.`*
+
+```C++
+String getDate(uint16_t messageIndex);
+```
+
+
+
+
+**Get the message UID for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`UID String that can be use in setFechUID.`*
+
+```C++
+String getUID(uint16_t messageIndex);
+```
+
+
+
+
+**Get the message number for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`The message number which vary upon search criteria and sorting.`*
+
+```C++
+String getNumber(uint16_t messageIndex);
+```
+
+
+
+
+**Get the message ID for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`The message ID String.`*
+
+```C++
+String getMessageID(uint16_t messageIndex);
+```
+
+
+
+
+**Get the accept language for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`The accept language String.`*
+
+```C++
+String getAcceptLanguage(uint16_t messageIndex);
+```
+
+
+
+**Get the content language of text or html for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`The content language String.`*
+
+```C++
+String getContentLanguage(uint16_t messageIndex);
+```
+
+
+
+
+**Determine fetch error status for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Fetch error status.`*
+
+```C++
+bool isFetchMessageFailed(uint16_t messageIndex);
+```
+
+
+
+**Get fetch error reason for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Fetch error reason String for selected message index.`*
+
+```C++
+String getFetchMessageFailedReason(uint16_t messageIndex);
+```
+
+
+
+
+**Determine the attachment download error for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Fetch status.`*
+
+```C++
+bool isDownloadAttachmentFailed(uint16_t messageIndex, size_t attachmentIndex);
+```
+
+
+
+
+**Get the attachment download error reason for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Download error reason String for selected message index.`*
+
+```C++
+String getDownloadAttachmentFailedReason(uint16_t messageIndex, size_t attachmentIndex);
+```
+
+
+
+**Determine the downloaded/saved text message error status for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Text message download status.`*
+
+```C++
+bool isDownloadMessageFailed(uint16_t messageIndex);
+```
+
+
+
+
+
+**Get the attachment or message downloadeds error reason for selected message index from search result.**
+
+param *`messageIndex`* - The index of message.
+
+return *`Downloaded error reason String for selected message index.`*
+
+```C++
+String getDownloadMessageFailedReason(uint16_t messageIndex);
+```
+
+
+
+
+**Assign the download and decode flags for html message download.**
+
+param *`download`* - Boolean flag to enable/disable message download.
+
+return *`decoded`* - Boolean flag to enable/disable html message decoding (support utf8 and base64 encoding).
+
+```C++
+void saveHTMLMessage(bool download, bool decoded);
+```
+
+
+
+
+**Assign the download and decode flags for plain text message download.**
+
+param *`download`* - Boolean flag to enable/disable message download.
+
+return *`decoded`* - Boolean flag to enable/disable plain text message decoding (support utf8 and base64 encoding).
+
+```C++
+void saveTextMessage(bool download, bool decoded);
+```
+
+
+
+
+**Determine the mailbox folder count.**
+
+return *`Folder count number.`* 
+
+```C++
+uint16_t getFolderCount();
+```
+
+
+
+
+**Get the mailbox folder name at selected index.**
+
+param *`folderIndex`* - Index of folder.
+
+return *`Folder name String.`* 
+
+Use folder name from this function for fetch or search.
+
+```C++
+String getFolder(uint16_t folderIndex);
+```
+
+
+
+**Determin the number of supported flags count.**
+
+return *`Flag count number.`* 
+
+```C++
+uint16_t getFlagCount();
+```
+
+
+
+
+**Get the flag name for selected index.**
+
+param *`folderIndex`* - Index of folder.
+
+return *`Flag name String.`* 
+
+Use flags from this function for fetch or search.
+
+```C++
+String getFlag(uint16_t flagIndex);
+```
+
+
+
+
+**Get the number of message in selected mailbox folder.**
+
+return *`Total message number.`* 
+
+```C++
+size_t totalMessages();
+```
+
+
+
+
+**Get the number of message from search result.**
+
+return *`Search result number.`* 
+
+```C++
+size_t searchCount();
+```
+
+
+
+
+**Get the number of message available from search result which less than search limit.**
+
+return *`Available message number.`* 
+
+```C++
+size_t availableMessages();
+```
+
+
+
+
+
+**Get the number of attachments for selected message index from search result.**
+
+param *`messageIndex`* - Index of message.
+
+return *`Number of attachments`* 
+
+```C++
+size_t getAttachmentCount(uint16_t messageIndex);
+```
+
+
+
+
+
+**Get file name of attachment for selected attachment index and message index from search result.**
+
+param *`messageIndex`* - Index of message.
+
+param *`attachmentIndex`* - Index of attachment.
+
+return *`The attachment file name String at the selected index.`* 
+
+```C++
+String getAttachmentFileName(size_t messageIndex, size_t attachmentIndex);
+```
+
+
+
+
+**Get the name of attachment for selected attachment index and message index from search result.**
+
+param *`messageIndex`* - Index of message.
+
+param *`attachmentIndex`* - Index of attachment.
+
+return *`The attachment name String at the selected index.`* 
+
+```C++
+String getAttachmentName(size_t messageIndex, size_t attachmentIndex);
+```
+
+
+
+
+**Get attachment file size for selected attachment index and message index from search result.**
+
+param *`messageIndex`* - Index of message.
+
+param *`attachmentIndex`* - Index of attachment.
+
+return *`The attachment file size in byte at the selected index.`* 
+
+```C++
+int getAttachmentFileSize(size_t messageIndex, size_t attachmentIndex);
+```
+
+
+
+
+**Get creation date of attachment for selected attachment index and message index from search result.**
+
+param *`messageIndex`* - Index of message.
+
+param *`attachmentIndex`* - Index of attachment.
+
+return *`The attachment creation date String at the selected index.`* 
+
+```C++
+String getAttachmentCreationDate(size_t messageIndex, size_t attachmentIndex);
+```
+
+
+
+
+**Get attachment file type for selected attachment index and message index from search result.**
+
+param *`messageIndex`* - Index of message.
+
+param *`attachmentIndex`* - Index of attachment.
+
+return *`File MIME String at the selected index`* e.g. image/jpeg.
+
+```C++
+String getAttachmentType(size_t messageIndex, size_t attachmentIndex);
+```
+
+
+
+
+**Clear IMAPData object data.**
+
+```C++
+void empty();
+```
+
+
+
     
 ### SMTPData object call for sending Email.
 
+
+**Set SMTP server login credentials**
+
+param *`host`* - SMTP server e.g. smtp.gmail.com
+
+param *`port`* - SMTP port.
+
+param *`loginEmail`* - The account Email.
+
+param *`loginPassword`* - The account password.
+
+```C++
+void setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword);
 ```
 
-    /*
-    * Set login credentials to Email object
-    * 
-    *\param host - SMTP server e.g. smtp.gmail.com
-    *\param port - SMTP port.
-    *\param loginEmail - The account Email.
-    *\param loginPassword - The account password.
-    */
-    void setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword);
-
-    /*
-     *Set Sender info to Email object
-     *
-     *\param fromName - Sender's name
-     *\param senderEmail - Sender's Email.
-    */
-    void setSender(const String &fromName, const String &senderEmail);
-
-    /*
-    * Get Sender's name from Email object
-    * 
-    *\return Sender's name String.
-    */
-    String getFromName();
-
-    /*
-    * Get Sender's Email from Email object
-    * 
-    * \return Sender's Email String.
-    */
-    String getSenderEmail();
-
-    /*
-    * Set Email priority or importance to Email object
-    * \param priority - Number from 1 to 5, 1 for highest, 3 for normal and 5 for lowest priority
-    */
-    void setPriority(int priority);
-
-    /*
-    * Set Email priority or importance to Email object
-    * 
-    * \param priority - String (High, Normal or Low)
-    */
-    void setPriority(const String &priority);
-
-    /*
-    * Get Email priority from Email object
-    * \return number represents Email priority (1 for highest, 3 for normal, 5 for low priority).
-    */
-    uint8_t getPriority();
-
-    /*
-    * Add one or more recipient to Email object
-    * 
-    * \param email - Recipient Email String of one recipient.
-    * For add multiple recipients, call addRecipient for each recipient.
-    */
-    void addRecipient(const String &email);
-
-    /*
-    * Remove recipient from Email object
-    * 
-    * \param email - Recipient Email String.
-    */
-    void removeRecipient(const String &email);
-
-    /*
-    * Remove recipient from Email object
-    * 
-    * \param index - Index of recipients in Email object that previously added.
-    */
-    void removeRecipient(uint8_t index);
-
-    /*
-    * Clear all recipients in Email object.
-    */
-    void clearRecipient();
-
-    /*
-    * Get one recipient from Email object
-    * 
-    * \param index - Index of recipients in Email object to get.
-    * \return Recipient Email String at the index.
-    */
-    String getRecipient(uint8_t index);
-
-    /*
-    * Get number of recipients in Email object
-    * 
-    * \return Number of recipients.
-    */
-    uint8_t recipientCount();
-
-    /*
-    * Set the Email subject to Email object
-    * 
-    * \param subject - The subject.
-    */
-    void setSubject(const String &subject);
-
-    /*
-    * Get the Email subject from Email object
-    * 
-    * \return Subject String.
-    */
-    String getSubject();
-
-    /*
-    * Set the Email message to Email object
-    * 
-    * \param message - The message can be in normal text or html format.
-    * \param htmlFormat - The html format flag, True for send the message as html format
-    */
-    void setMessage(const String &message, bool htmlFormat);
-
-    /*
-    * Get the message from Email object
-    * 
-    * \return Message String.
-    */
-    String getMessage();
-
-    /*
-    * Check the message in Email object is being send in html format
-    * 
-    * \return True for being send message in html format.
-    */
-    bool htmlFormat();
-
-    /*
-    * Add Carbon Copy (CC) Email to Email object
-    * 
-    * \param email - The CC Email String.
-    */
-    void addCC(const String &email);
-
-    /*
-    * Remove specified Carbon Copy (CC) Email from Email object
-    * 
-    * \param email - The CC Email String to remove.
-    */
-    void removeCC(const String &email);
-
-    /*
-    * Remove specified Carbon Copy (CC) Email from Email object
-    * 
-    * \param index - The CC Email index to remove.
-    */
-    void removeCC(uint8_t index);
-
-    /*
-    * Clear all Carbon Copy (CC) Emails from Email object
-    */
-    void clearCC();
-
-    /*
-    * Get Carbon Copy (CC) Email from Email object at specified index
-    * 
-    * \param index - The CC Email index to get.
-    * \return The CC Email string at the index.
-    */
-    String getCC(uint8_t index);
-
-    /*
-    * Get the number of Carbon Copy (CC) Email in Email object
-    * 
-    * \return Number of CC Emails.
-    */
-    uint8_t ccCount();
-
-    /*
-    * Add Blind Carbon Copy (BCC) Email to Email object
-    * 
-    * \param email - The BCC Email String.
-    */
-    void addBCC(const String &email);
-
-    /*
-    * Remove specified Blind Carbon Copy (BCC) Email from Email object
-    * 
-    * \param email - The BCC Email String to remove.
-    */
-    void removeBCC(const String &email);
-
-    /*
-    * Remove specified Blind Carbon Copy (BCC) Email from Email object
-    * 
-    * \param index - The BCC Email index to remove.
-    */
-    void removeBCC(uint8_t index);
-
-    /*
-    * Clear all Blind Carbon Copy (BCC) Emails from Email object
-    */
-    void clearBCC();
-
-    /*
-    * Get Blind Carbon Copy (BCC) Email from Email object at specified index
-    * 
-    * \param index - The BCC Email index to get.
-    * \return The BCC Email string at the index.
-    */
-    String getBCC(uint8_t index);
-
-    /*
-    * Get the number of Blind Carbon Copy (BCC) Email in Email object
-    * 
-    * \return Number of BCC Emails.
-    */
-    uint8_t bccCount();
-
-    /*
-    * Add attchement data (binary) from internal memory (flash or ram) to Email object
-    * 
-    * \param fileName - The file name String that recipient can be saved.
-    * \param mimeType - The MIME type of file (image/jpeg, image/png, text/plain...). Can be empty String.
-    * \param data - The byte array of data (uint8_t)
-    * \param size - The data length in byte.
-    */
-    void addAttachData(const String &fileName, const String &mimeType, uint8_t *data, uint16_t size);
-
-    /*
-    * Remove specified attachment data from Email object
-    * 
-    * \param fileName - The file name of the attachment data to remove.
-    */
-    void removeAttachData(const String &fileName);
-
-    /*
-    * Remove specified attachment data from Email object
-    * 
-    * \param index - The index of the attachment data (count only data type attachment) in Email object to remove.
-    */
-    void removeAttachData(uint8_t index);
-
-    /*
-    * Get the number of attachment data in Email object
-    * 
-    * \return Number of attach data.
-    */
-    uint8_t attachDataCount();
-
-    /*
-    * Add attchement file from SD card to Email object
-    * 
-    * \param fileName - The file name String that recipient can be saved.
-    * \param mimeType - The MIME type of file (image/jpeg, image/png, text/plain...). Can be omitted.
-    */
-    void addAttachFile(const String &filePath, const String &mimeType = "");
-
-    /*
-    * Remove specified attachment file from Email object
-    * 
-    * \param fileName - The file name of the attachment file to remove.
-    */
-    void removeAttachFile(const String &filePath);
-
-    /*
-    * Remove specified attachment file from Email object
-    * 
-    * \param index - The index of the attachment file (count only file type attachment) in Email object to remove.
-    */
-    void removeAttachFile(uint8_t index);
-
-    /*
-    * Clear all attachment data from Email object.
-    */
-    void clearAttachData();
-
-    /*
-    * Clear all attachment file from Email object.
-    */
-    void clearAttachFile();
-
-    /*
-    * Clear all attachments (both data and file type attachments) from Email object.
-    */
-    void clearAttachment();
-
-    /*
-    * Get number of attachments (both data and file type attachments) in Email object.
-    * 
-    * /return Number of all attachemnts in Email object.
-    */
-    uint8_t attachFileCount();
-
-    /*
-    * Clear all data from Email object to free memory.
-    */
-    void empty();
-
-    /*
-    * Set the Email sending status callback function to Email object.
-    * 
-    * \param sendCallback - The callback function that accept the sendStatusCallback param.
-    */
-    void setSendCallback(sendStatusCallback sendCallback);
 
 
+
+
+**Set Sender info**
+
+param *`fromName`* - Sender's name
+
+param *`senderEmail`* - Sender's Email.
+
+```C++
+void setSender(const String &fromName, const String &senderEmail);
 ```
+
+
+
+
+
+**Get Sender's name**
+
+return `*Sender's name String.`*
+
+```C++
+String getFromName();
+```
+
+
+
+
+
+**Get Sender's Email.**
+
+return `*Sender's Email String.`*
+
+```C++
+String getSenderEmail();
+```
+
+
+
+
+**Set Email priority or importance**
+
+param *`priority`* - Number from 1 to 5, 1 for highest, 3 for normal and 5 for lowest priority
+
+```C++
+void setPriority(int priority);
+```
+
+
+
+
+
+**Set Email priority or importance.**
+
+param *`priority`* - String (High, Normal or Low)
+
+```C++
+void setPriority(const String &priority);
+```
+
+
+
+
+**Get Email priority**
+
+return *`Number`* represents Email priority (1 for highest, 3 for normal, 5 for low priority).
+
+```C++
+uint8_t getPriority();
+```
+
+
+
+
+**Add one or more recipient**
+
+param *`email`* - Recipient Email String of one recipient.
+
+To add multiple recipients, call addRecipient for each recipient.
+
+```C++
+void addRecipient(const String &email);
+```
+
+
+
+
+**Remove recipient**
+
+param *`email`* - Recipient Email String.
+
+```C++
+void removeRecipient(const String &email);
+```
+ 
+ 
+
+
+**Remove recipient**
+
+param *`index`* - Index of recipients in Email object that previously added.
+
+```C++
+void removeRecipient(uint8_t index);
+```
+
+
+
+
+**Clear all recipients**
+```C++
+void clearRecipient();
+```
+ 
+ 
+ 
+ 
+**Get one recipient**
+
+param *`index`* - Index of recipients.
+
+return *`Recipient Email`* String at the index.
+
+```C++
+String getRecipient(uint8_t index);
+```
+
+
+
+
+
+**Get number of recipients**
+
+return *`Number`* of recipients.
+
+```C++
+uint8_t recipientCount();
+```
+
+  
+
+
+**Set the Email subject.**
+
+param *`subject`* - The subject.
+
+```C++
+void setSubject(const String &subject);
+```
+
+
+
+
+**Get the Email subject.**
+
+return *`Subject String.`*
+
+```C++
+String getSubject();
+```
+
+
+
+
+**Set the Email message**
+
+param *`message`* - The message can be in normal text or html format.
+
+param *`htmlFormat`* - The html format flag, True for send the message as html format
+  
+```C++
+void setMessage(const String &message, bool htmlFormat);
+```
+
+
+
+
+**Get the message**
+
+return *`Message String.`*
+
+```C++
+String getMessage();
+```
+
+
+
+
+**Determine  message is being send in html format.**
+
+return *`Boolean`* status.
+
+```C++
+bool htmlFormat();
+```
+
+
+
+
+ 
+**Add Carbon Copy (CC) Email.**
+
+param *`email`* - The CC Email String.
+
+```C++
+void addCC(const String &email);
+```
+
+
+
+
+
+**Remove specified Carbon Copy (CC) Email**
+
+param *`email`* - The CC Email String to remove.
+
+```C++
+void removeCC(const String &email);
+```
+
+
+
+
+
+**Remove specified Carbon Copy (CC) Email**
+
+param *`index`* - The CC Email index to remove.
+  
+```C++
+void removeCC(uint8_t index);
+```
+
+
+
+
+
+**Clear all Carbon Copy (CC) Emails**
+
+```C++
+void clearCC();
+```
+
+
+
+
+
+**Get Carbon Copy (CC) Email at specified index.**
+
+param *`index`* - The CC Email index to get.
+return *`The CC Email string`* at the index.
+
+```C++
+String getCC(uint8_t index);
+```
+
+
+
+
+
+**Get the number of Carbon Copy (CC) Email.**
+
+return *`Number`* of CC Emails.
+
+```C++
+uint8_t ccCount();
+```
+
+
+
+
+
+**Add Blind Carbon Copy (BCC) Email**
+
+param *`email`* - The BCC Email String.
+
+```C++
+void addBCC(const String &email);
+```
+
+
+
+
+
+**Remove specified Blind Carbon Copy (BCC) Email**
+
+param *`email`* - The BCC Email String to remove.
+
+```C++
+void removeBCC(const String &email);
+```
+
+
+
+
+
+**Remove specified Blind Carbon Copy (BCC) Email**
+
+param *`index`* - The BCC Email index to remove.
+
+```C++
+void removeBCC(uint8_t index);
+```
+  
+
+
+
+
+
+**Clear all Blind Carbon Copy (BCC) Emails**
+
+```C++
+void clearBCC();
+```
+
+
+
+
+
+**Get Blind Carbon Copy (BCC) Email at specified index.**
+
+param *`index`* - The BCC Email index to get.
+
+return *`The BCC Email string`* at the index.
+
+```C++
+String getBCC(uint8_t index);
+```
+
+
+
+
+
+**Get the number of Blind Carbon Copy (BCC) Email**
+
+return *`Number`* of BCC Emails.
+
+```C++
+uint8_t bccCount();
+```
+
+
+
+
+
+**Add attchement data (binary) from internal memory (flash or ram).**
+
+param *`fileName`* - The file name String that recipient can be saved.
+
+param *`mimeType`* - The MIME type of file (image/jpeg, image/png, text/plain...). Can be empty String.
+
+param *`data`* - The byte array of data (uint8_t).
+
+param *`size`* - The data length in byte.
+
+```C++
+void addAttachData(const String &fileName, const String &mimeType, uint8_t *data, uint16_t size);
+```
+ 
+ 
+
+
+ 
+**Remove specified attachment data.**
+
+param *`fileName`* - The file name of the attachment data to remove.
+
+```C++
+void removeAttachData(const String &fileName);
+```
+ 
+ 
+
+
+
+**Remove specified attachment data.**
+
+param *`index`* - The index of the attachment data (count only data type attachment) to remove. 
+
+```C++
+void removeAttachData(uint8_t index);
+```
+
+
+
+
+**Get the number of attachment data.**
+
+return *`Number`* of attach data.
+
+```C++
+uint8_t attachDataCount();
+```
+
+
+
+**Add attchement file from SD card**
+
+param *`fileName`* - The file name String that recipient can be saved.
+
+param *`mimeType`* - The MIME type of file (image/jpeg, image/png, text/plain...). Can be omitted.
+
+```C++
+void addAttachFile(const String &filePath, const String &mimeType = "");
+```
+
+
+
+
+**Remove specified attachment file from Email object.**
+
+param *`fileName`* - The file name of the attachment file to remove.
+
+```C++
+void removeAttachFile(const String &filePath);
+```
+
+
+
+
+**Remove specified attachment file.**
+
+param *`index`* - The index of the attachment file (count only file type attachment) to remove.
+
+```C++
+void removeAttachFile(uint8_t index);
+```
+
+
+
+
+**Clear all attachment data.**
+
+```C++
+void clearAttachData();
+```
+
+
+
+
+**Clear all attachment file.**
+
+```C++
+void clearAttachFile();
+```
+
+
+
+
+**Clear all attachments (both data and file type attachments).**
+
+```C++
+void clearAttachment();
+```
+ 
+ 
+ 
+ 
+**Get number of attachments (both data and file type attachments).**
+
+return *`Number`* of all attachemnts.
+
+```C++
+uint8_t attachFileCount();
+```
+
+
+
+
+
+**Clear all data from Email object to free memory.**
+
+```C++
+void empty();
+```
+
+
+
+
+  
+**Set the Email sending status callback function to Email object.**
+
+param *`sendCallback`* - The callback function that accept the sendStatusCallback param.
+
+```C++
+void setSendCallback(sendStatusCallback sendCallback);
+```
+
+
 
 
 ## Usages
 
-See the examples
+
+See [full examples](https://github.com/mobizt/ESP32-Mail-Client/tree/master/examples) for all features usages.
+
 
 
 
