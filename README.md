@@ -1098,7 +1098,7 @@ void setSender(const String &fromName, const String &senderEmail);
 
 **Get Sender's name**
 
-return `*Sender's name String.`*
+return *`Sender's name String.`*
 
 ```C++
 String getFromName();
@@ -1110,7 +1110,7 @@ String getFromName();
 
 **Get Sender's Email.**
 
-return `*Sender's Email String.`*
+return *`Sender's Email String.`*
 
 ```C++
 String getSenderEmail();
