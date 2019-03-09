@@ -777,7 +777,8 @@ void ESP32_MailClient::createDirs(std::string dirs)
 bool ESP32_MailClient::sdTest()
 {
 
-  SD.begin();
+  if (!SD.begin())
+    return false;
 
   File file = SD.open(ESP32_MAIL_STR_204, FILE_WRITE);
   if (!file)
