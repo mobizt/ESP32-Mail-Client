@@ -1,6 +1,6 @@
 # Mail Client Arduino Library for ESP32 v 1.0.2
 
-This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download using SMTP and IMAP servers. 
+This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download via SMTP and IMAP servers. 
 
 The library was test and work well with ESP32s based module.
 
@@ -19,17 +19,17 @@ This following devices were tested and work well.
  
 ## Features
 
-* Support Email sending with or without attachment using IMAP server.
+* Support Email sending with or without attachment via IMAP server.
 
 * Working with SD card allows large file attachment supported.
 
 * Support Email reading (fetch and search modes) with or without attachment downloads.
 
-* Support large attachment download using SD card.
+* Support large attachment download via SD card.
 
 * Message text and its header are able to download and save to SD card.
 
-* Support Email message fetch and search using IMAP command as in RFC 3501 (depending on IMAP server implementation).
+* Support Email message fetch and search via IMAP command as in RFC 3501 (depending on IMAP server implementation).
 
 
 
@@ -44,9 +44,9 @@ Required HTTPClientESP32Ex library to be installed. https://github.com/mobizt/HT
 
 ## Prerequisites
 
-To send Email using Gmail outgoing Email service, less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
+To send Email via Gmail outgoing Email service, less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
 
-To receive Email using Gmail incoming Email service, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
+To receive Email via Gmail incoming Email service, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
 
 
 
@@ -124,63 +124,63 @@ When completed all required message data, sending Email `MailClient.sendMail(htt
 
 **Get Email**
 
-To read or receive Email, mailbox folder should be assigned using `imapData.setFolder` e.g. `imapData.setFolder("INBOX")`.
+To read or receive Email, mailbox folder should be assigned via `imapData.setFolder` e.g. `imapData.setFolder("INBOX")`.
 
-Then set search criteria to search specified mailbox folder using `imapData.setSearchCriteria` e.g. `imapData.setSearchCriteria("UID SEARCH ALL")`.
+Then set search criteria to search specified mailbox folder via `imapData.setSearchCriteria` e.g. `imapData.setSearchCriteria("UID SEARCH ALL")`.
 
 Then set search limit to limut the memory and time usages `imapData.setSearchLimit`.
 
 From search criteria, UID of message will be available to fetch or read.
 
-To search Email only, body message and attachment can be ignore to reduce the network data usage using `imapData.setHeaderOnly(true)`.
+To search Email only, body message and attachment can be ignore to reduce the network data usage via `imapData.setHeaderOnly(true)`.
 
 Begin receive Email `MailClient.readMail(http, imapData)`.
 
 From above settings, you will get the following header information
 
-Messsage UID using `imapData.getUID`.
+Messsage UID via `imapData.getUID`.
 
-Messsage ID using `imapData.getMessageID`.
+Messsage ID via `imapData.getMessageID`.
 
-Accept Language using `imapData.getAcceptLanguage`.
+Accept Language via `imapData.getAcceptLanguage`.
 
-Content Language using `imapData.getContentLanguage`.
+Content Language via `imapData.getContentLanguage`.
 
-Sender using `imapData.getFrom`.
+Sender via `imapData.getFrom`.
 
-Sender Charset using `imapData.getFromCharset`.
+Sender Charset via `imapData.getFromCharset`.
 
-Recipient using `imapData.getTo`.
+Recipient via `imapData.getTo`.
 
-Recipient Charset using `imapData.getToCharset`.
+Recipient Charset via `imapData.getToCharset`.
 
-CC using `imapData.getCC`.
+CC via `imapData.getCC`.
 
-CC Charset using `imapData.getCCCharset`.
+CC Charset via `imapData.getCCCharset`.
 
-Date using `imapData.getDate`.
+Date via `imapData.getDate`.
 
-Subject using `imapData.getSubject`.
+Subject via `imapData.getSubject`.
 
-Subject Charset using `imapData.getSubjectCharset`.
+Subject Charset via `imapData.getSubjectCharset`.
 
 In addition, by setting search criteria, the following infomation are available.
 
-Mailbox folder count using `imapData.getFolderCount`.
+Mailbox folder count via `imapData.getFolderCount`.
 
-Mailbox folder name using `imapData.getFolder`.
+Mailbox folder name via `imapData.getFolder`.
 
-Supported flags count using `imapData.getFlagCount`.
+Supported flags count via `imapData.getFlagCount`.
 
-Supported flags name using `imapData.getFlag`.
+Supported flags name via `imapData.getFlag`.
 
-Total message in folder using `imapData.totalMessages`.
+Total message in folder via `imapData.totalMessages`.
 
-Total message from search result using `imapData.searchCount`.
+Total message from search result via `imapData.searchCount`.
 
-Available message from search result (limited by `imapData.setSearchLimit`) using `imapData.availableMessages`.
+Available message from search result (limited by `imapData.setSearchLimit`) via `imapData.availableMessages`.
 
-When fetch specific message using `imapData.setFechUID`,  availability of attachment file can be determined using 
+When fetch specific message via `imapData.setFechUID`,  availability of attachment file can be determined via 
 `imapData.getAttachmentCount` for that message which will be automatically download by setting `imapData.setDownloadAttachment(true)` 
 prior to `MailClient.readMail`.
 
@@ -201,7 +201,7 @@ See [full examples](https://github.com/mobizt/ESP32-Mail-Client/tree/master/exam
 __Global functions__
 
 
-**Sending Email using SMTP server.**
+**Sending Email via SMTP server.**
 
 param *`http`* - HTTPClientESP32Ex WiFi client.
 
@@ -216,7 +216,7 @@ bool sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData);
 
 
 
-**Reading Email using IMAP server.**
+**Reading Email via IMAP server.**
 
 param *`http`* - HTTPClientESP32Ex WiFi client.
 
@@ -304,7 +304,7 @@ void setAttachmentSizeLimit(size_t size);
 
 **Set the search criteria used in selected mailbox search.**
 
-In case of message UID was set using setFechUID function, search operation will not process,
+In case of message UID was set via setFechUID function, search operation will not process,
 
 you need to clear message UID by calling imapData.setFechUID("") to clear.
 
@@ -533,7 +533,7 @@ void setReadCallback(readStatusCallback readCallback);
 
 param *`report`* - Boolean flag to enable/disable attachement download progress while fetching or receiving message.
 
-To get the download status, Callback function should be set using setReadCallback.
+To get the download status, Callback function should be set via setReadCallback.
 
 ```C++
 void setDownloadReport(bool report);
