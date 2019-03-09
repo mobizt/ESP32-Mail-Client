@@ -181,9 +181,7 @@ Total message from search result using `imapData.searchCount`.
 Available message from search result (limited by `imapData.setSearchLimit`) using `imapData.availableMessages`.
 
 When fetch specific message using `imapData.setFechUID`,  availability of attachment file can be determined using 
-
 `imapData.getAttachmentCount` for that message which will be automatically download by setting `imapData.setDownloadAttachment(true)` 
-
 prior to `MailClient.readMail`.
 
 
