@@ -1,6 +1,6 @@
 # Mail Client Arduino Library for ESP32 v 1.0.2
 
-This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
+This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download using SMTP and IMAP servers. 
 
 The library was test and work well with ESP32s based module.
 
@@ -19,11 +19,11 @@ This following devices were tested and work well.
  
 ## Features
 
-* Support Email sending with or without attachment through IMAP server.
+* Support Email sending with or without attachment using IMAP server.
 
 * Working with SD card allows large file attachment supported.
 
-* Support Email reading (fetch and search modes) with or without attachment doqnloads.
+* Support Email reading (fetch and search modes) with or without attachment downloads.
 
 * Support large attachment download using SD card.
 
@@ -51,6 +51,149 @@ To receive Email using Gmail incoming Email service, IMAP option should be enabl
 
 
 
+
+## Usages
+
+
+__Declaration and Initialization__
+
+
+
+**The first thing to do to use this library.**
+
+```C++
+
+//1. Download  HTTPClientESP32Ex library above and add to Arduino library
+
+//2. Include ESP32 Mail Client library (this library)
+
+#include "ESP32_MailClient.h"
+
+//3. Declare WiFi or HTTP client for internet connection in global scope.
+
+HTTPClientESP32Ex http;
+
+//4. For sending Email, declare Email Sending data object in global scope.
+SMTPData smtpData;
+
+//Or
+
+//5. For receiving Email, declare Email receiving data object in global scope.
+IMAPData imapData;
+
+
+//6. Setup SMTP server login credential in setup()
+
+smtpData.setLogin("smtp.gmail.com", 465, "YOUR_EMAIL_ACCOUNT@gmail.com", "YOUR_EMAIL_PASSWORD");
+
+//Or
+
+//7. Setup IMAP server login credential in setup()
+
+imapData.setLogin("imap.gmail.com", 993, "YOUR_EMAIL_ACCOUNT@gmail.com", "YOUR_EMAIL_PASSWORD");
+
+
+
+```
+
+___
+
+
+__Send and Receive Email__
+
+
+**Compose Email**
+
+This library allows you to set sender, recipient, importance (priority), CC, BCC and attachment data (binary or from SD card file).
+
+To set sender, use `smtpData.setSender` e.g. `smtpData.setSender("Jarvis", "SOME_EMAIL_ACCOUNT@SOME_EMAIL.com")`.
+
+To set priority, use `smtpData.setPriority` e.g. `smtpData.setPriority("High")`.
+
+To set message subject, use `smtpData.setSubject` e.g. `smtpData.setSubject("ESP32 Send Mail Test")`.
+
+To set message text, use `smtpData.setMessage` e.g. `smtpData.setMessage("This is plain text message", false);`.
+
+To set sender, use `smtpData.addRecipient` e.g. `smtpData.addRecipient("SOME_RECIPIENT@SOME_MAIL.com")`.
+
+To add attachment, use `smtpData.addAttachData` e.g. `smtpData.addAttachData("test.png", "image/png", (uint8_t *)imageData, sizeof imageData);`.
+
+When completed all required message data, sending Email `MailClient.sendMail(http, smtpData)`.
+
+
+
+**Get Email**
+
+To read or receive Email, mailbox folder should be assigned using `imapData.setFolder` e.g. `imapData.setFolder("INBOX")`.
+
+Then set search criteria to search specified mailbox folder using `imapData.setSearchCriteria` e.g. `imapData.setSearchCriteria("UID SEARCH ALL")`.
+
+Then set search limit to limut the memory and time usages `imapData.setSearchLimit`.
+
+From search criteria, UID of message will be available to fetch or read.
+
+To search Email only, body message and attachment can be ignore to reduce the network data usage using `imapData.setHeaderOnly(true)`.
+
+Begin receive Email `MailClient.readMail(http, imapData)`.
+
+From above settings, you will get the following header information
+
+Messsage UID using `imapData.getUID`.
+
+Messsage ID using `imapData.getMessageID`.
+
+Accept Language using `imapData.getAcceptLanguage`.
+
+Content Language using `imapData.getContentLanguage`.
+
+Sender using `imapData.getFrom`.
+
+Sender Charset using `imapData.getFromCharset`.
+
+Recipient using `imapData.getTo`.
+
+Recipient Charset using `imapData.getToCharset`.
+
+CC using `imapData.getCC`.
+
+CC Charset using `imapData.getCCCharset`.
+
+Date using `imapData.getDate`.
+
+Subject using `imapData.getSubject`.
+
+Subject Charset using `imapData.getSubjectCharset`.
+
+In addition, by setting search criteria, the following infomation are available.
+
+Mailbox folder count using `imapData.getFolderCount`.
+
+Mailbox folder name using `imapData.getFolder`.
+
+Supported flags count using `imapData.getFlagCount`.
+
+Supported flags name using `imapData.getFlag`.
+
+Total message in folder using `imapData.totalMessages`.
+
+Total message from search result using `imapData.searchCount`.
+
+Available message from search result (limited by `imapData.setSearchLimit`) using `imapData.availableMessages`.
+
+When fetch specific message using `imapData.setFechUID`,  availability of attachment file can be determined using 
+
+`imapData.getAttachmentCount` for that message which will be automatically download by setting `imapData.setDownloadAttachment(true)` 
+
+prior to `MailClient.readMail`.
+
+
+
+See [full examples](https://github.com/mobizt/ESP32-Mail-Client/tree/master/examples) for all features usages.
+
+
+
+
+
 ## All Supported Functions
 
 
@@ -60,7 +203,7 @@ To receive Email using Gmail incoming Email service, IMAP option should be enabl
 __Global functions__
 
 
-**Sending Email through SMTP server.**
+**Sending Email using SMTP server.**
 
 param *`http`* - HTTPClientESP32Ex WiFi client.
 
@@ -75,7 +218,7 @@ bool sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData);
 
 
 
-**Reading Email through IMAP server.**
+**Reading Email using IMAP server.**
 
 param *`http`* - HTTPClientESP32Ex WiFi client.
 
@@ -163,7 +306,7 @@ void setAttachmentSizeLimit(size_t size);
 
 **Set the search criteria used in selected mailbox search.**
 
-In case of message UID was set through setFechUID function, search operation will not process,
+In case of message UID was set using setFechUID function, search operation will not process,
 
 you need to clear message UID by calling imapData.setFechUID("") to clear.
 
@@ -392,7 +535,7 @@ void setReadCallback(readStatusCallback readCallback);
 
 param *`report`* - Boolean flag to enable/disable attachement download progress while fetching or receiving message.
 
-To get the download status, Callback function should be set through setReadCallback.
+To get the download status, Callback function should be set using setReadCallback.
 
 ```C++
 void setDownloadReport(bool report);
@@ -1424,14 +1567,6 @@ param *`sendCallback`* - The callback function that accept the sendStatusCallbac
 ```C++
 void setSendCallback(sendStatusCallback sendCallback);
 ```
-
-
-
-
-## Usages
-
-
-See [full examples](https://github.com/mobizt/ESP32-Mail-Client/tree/master/examples) for all features usages.
 
 
 

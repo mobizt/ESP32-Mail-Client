@@ -111,7 +111,7 @@ void setup()
   smtpData.setMessage("<div style=\"color:#ff0000;font-size:20px;\">Hello World! - From ESP32</div>", true);
 
   //Add recipients, can add more than one recipient
-  smtpData.addRecipient("k_suwatchai@hotmail.com");
+  smtpData.addRecipient("SOME_RECIPIENT@SOME_MAIL.com");
 
 
 
