@@ -19,17 +19,17 @@ This following devices were tested and work well.
  
 ## Features
 
-Support Email sending with or without attachment through IMAP server.
+* Support Email sending with or without attachment through IMAP server.
 
-Working with SD card allows large file attachment supported.
+* Working with SD card allows large file attachment supported.
 
-Support Email reading (fetch) with or without attachment doqnloads.
+* Support Email reading (fetch and search modes) with or without attachment doqnloads.
 
-Support large attachment download using SD card.
+* Support large attachment download using SD card.
 
-Message text and its header are able to download and save to SD card.
+* Message text and its header are able to download and save to SD card.
 
-Support Email message fetch and search using IMAP command as in RFC 3501 (depending on IMAP server implementation).
+* Support Email message fetch and search using IMAP command as in RFC 3501 (depending on IMAP server implementation).
 
 
 
