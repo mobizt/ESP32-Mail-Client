@@ -55,9 +55,9 @@ To receive Email via Gmail incoming Email service, IMAP option should be enabled
 
 Click on **Clone or download** dropdown at the top of repository, select **Download ZIP** and save file on your computer.
 
-From Arduino IDE, goto menu **Sketch** -> **Include Library** -> **Add .ZIP Library...** and choose **Firebase-ESP32-master.zip** that previously downloaded.
+From Arduino IDE, goto menu **Sketch** -> **Include Library** -> **Add .ZIP Library...** and choose **ESP32-Mail-Client-master.zip** that previously downloaded.
 
-Go to menu **Files** -> **Examples** -> **Firebase-ESP32-master** and choose one from examples
+Go to menu **Files** -> **Examples** -> **ESP32-Mail-Client-master** and choose one from examples
 
 
 
