@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.0.2
+ *Mail Client Arduino Library for ESP32, version 1.0.3
  * 
- * March 9, 2019
+ * March 21, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers.
  * 
@@ -60,6 +60,8 @@ using namespace std;
 #define IMAP_STATUS_IMAP_RESPONSE_FAILED (-101)
 #define IMAP_STATUS_LOGIN_FAILED (-102)
 #define IMAP_STATUS_BAD_COMMAND (-103)
+
+#define MAIL_CLIENT_STATUS_WIFI_CONNECT_FAIL (-200)
 
 static const unsigned char base64_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -296,6 +298,7 @@ static const char ESP32_MAIL_STR_217[] PROGMEM = "FIELDS";
 static const char ESP32_MAIL_STR_218[] PROGMEM = "[";
 static const char ESP32_MAIL_STR_219[] PROGMEM = "]";
 static const char ESP32_MAIL_STR_220[] PROGMEM = "MIME";
+static const char ESP32_MAIL_STR_221[] PROGMEM = "connection lost";
 
 static bool compFunc(std::string i, std::string j)
 {
@@ -356,6 +359,7 @@ protected:
   int _imapStatus = 0;
   bool _sdOk = false;
   std::string smtpErrorReasonStr();
+  std::string imapErrorReasonStr();
   void set_message_header(string &header, std::string &message, bool htmlFormat);
   void set_attachment_header(uint8_t index, std::string &header, attachmentData &attach);
   bool validSubstringRange(int start, int length, std::string str);
