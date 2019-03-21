@@ -815,7 +815,7 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   cbData._info = ESP32_MAIL_STR_120;
   cbData._success = false;
 
-  WiFiClient *tcp = http.http_getStreamPtr();
+  WiFiClient *tcp;
 
   if (smtpData._sendCallback)
     smtpData._sendCallback(cbData);
@@ -833,6 +833,8 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
     }
     goto failed;
   }
+
+  tcp = http.http_getStreamPtr();
 
   if (smtpData._sendCallback)
   {
