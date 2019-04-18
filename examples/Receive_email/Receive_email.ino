@@ -126,7 +126,7 @@ void setup()
   //Set to get attachment downloading progress status.
   imapData.setDownloadReport(true);
 
-  readEmail();
+  MailClient.readMail(http, imapData);
 }
 
 void readEmail()
