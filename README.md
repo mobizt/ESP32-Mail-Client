@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 v 1.0.3
+# Mail Client Arduino Library for ESP32 v 1.0.4
 
 This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download via SMTP and IMAP servers. 
 
@@ -23,7 +23,7 @@ This following devices were tested and work well.
 
 * Working with SD card allows large file attachment supported.
 
-* Support Email reading (fetch and search modes) with or without attachment downloads.
+* Support Email reading via search and fetch modes (with or without attachment downloads).
 
 * Support large attachment download via SD card.
 
@@ -141,7 +141,7 @@ Then set search limit to limut the memory and time usages `imapData.setSearchLim
 
 From search criteria, UID of message will be available to fetch or read.
 
-To search Email only, body message and attachment can be ignore to reduce the network data usage via `imapData.setHeaderOnly(true)`.
+Whit search, body message and attachment can be ignore to reduce the network data usage.
 
 Begin receive Email `MailClient.readMail(http, imapData)`.
 
@@ -258,6 +258,40 @@ return - *`Error details string (String object).`*
 ```C++
 String imapErrorReason();
 ```
+
+
+
+
+
+**Init SD card with GPIO pins.**
+
+param *`sck`* -SPI Clock pin.
+
+param *`miso`* - SPI MISO pin.
+
+param *`m0si`* - SPI MOSI pin.
+
+param *`ss`* - SPI Chip/Slave Select pin.
+
+
+```C++
+void sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss);
+```
+
+
+
+
+
+
+**Init SD card with default GPIO pins.**
+
+
+```C++
+void sdBegin(void);
+```
+
+
+
 
 
 
@@ -451,8 +485,6 @@ void setFechUID(const String fetchUID);
 
 param *`download`* - Boolean flag to enable/disable attachment download.
 
-Also set setHeaderOnly function to false is needed.
-
 ```C++
 void setDownloadAttachment(bool download);
 ```
@@ -462,8 +494,6 @@ void setDownloadAttachment(bool download);
 **Enable/disable html message result.**
 
 param *`htmlFormat`* - Boolean flag to enable/disable html message result.
-
-Also set setHeaderOnly function to false is needed.
 
 The default value is false.
 
@@ -478,28 +508,12 @@ void setHTMLMessage(bool htmlFormat);
 
 param *`textFormat`* - Boolean flag to enable/disable plain text message result.
 
-Also set setHeaderOnly function to false is needed.
-
 The default value is true.
 
 ```C++
 void setTextMessage(bool textFormat);
 ```
 
-
-
-
-**Enable/disable header only result.**
-
-Message body and attachment will be ignored during serach or read
-
-param *`headerOnly`* - Boolean flag to enable/disable header only result.
-
-The default value is true.
-
-```C++
-void setHeaderOnly(bool headerOnly);
-```
 
 
 
