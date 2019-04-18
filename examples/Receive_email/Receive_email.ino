@@ -6,7 +6,6 @@
 
 //To receive Email for Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
 
-
 /*
   ===========================================================================================================================
   To prevent stack overrun in case of you want to download email attachments in IMAP readMail,
@@ -27,7 +26,6 @@
 #include "ESP32_MailClient.h"
 #include "SD.h"
 
-
 #define WIFI_SSID "YOUR_WIFI_SSID"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
@@ -43,7 +41,9 @@ void readCallback(ReadStatus info);
 //List all files in SD card
 void printDirectory(File &dir, int depth);
 
+void readEmail();
 
+unsigned long lastTime = 0;
 
 void setup()
 {
@@ -67,14 +67,14 @@ void setup()
 
   Serial.println();
 
-  SD.begin();
+  MailClient.sdBegin();
+  //MailClient.sdBegin(14,2,15,13); //SCK, MISO, MOSI,SS for TTGO T8 v1.7 or 1.8
 
   File dir = SD.open("/");
 
   printDirectory(dir, 0);
 
   Serial.println();
-
 
   imapData.setLogin("imap.gmail.com", 993, "YOUR_EMAIL_ACCOUNT@gmail.com", "YOUR_EMAIL_PASSWORD");
   imapData.setFolder("INBOX");
@@ -108,9 +108,6 @@ void setup()
   //Set to save text message in SD card with decoded content.
   imapData.saveTextMessage(true, true);
 
-  //Set to receive all (included header, message and attachment, not only header).
-  imapData.setHeaderOnly(false);
-
   //Set the maximum result when search criteria was set.
   imapData.setSearchLimit(10);
 
@@ -129,26 +126,38 @@ void setup()
   //Set to get attachment downloading progress status.
   imapData.setDownloadReport(true);
 
-  //Begin fetch/receive Email
+  readEmail();
+}
+
+void readEmail()
+{
+
+  Serial.println();
+  Serial.println("Read Email...");
+
+  imapData.setFechUID("10");
+  imapData.setSearchCriteria("");
   MailClient.readMail(http, imapData);
 
+  imapData.setFechUID("11");
+  imapData.setSearchCriteria("");
+  MailClient.readMail(http, imapData);
 
+  imapData.setFechUID("12");
+  imapData.setSearchCriteria("");
+  MailClient.readMail(http, imapData);
 }
 
 void loop()
 {
-}
 
-//Callback function to get the Email sending status
-void sendCallback(SendStatus msg)
-{
-  //Print the current status
-  Serial.println(msg.info());
-
-  //Do something when complete
-  if (msg.success())
+  if (millis() - lastTime > 1000 * 60 * 3)
   {
-    Serial.println("----------------");
+
+    lastTime = millis();
+    Serial.println(ESP.getFreeHeap());
+
+    readEmail();
   }
 }
 
@@ -223,7 +232,7 @@ void readCallback(ReadStatus msg)
 
       Serial.println();
     }
-    
+
     //To empty imapData object
     //imapData.empty();
   }

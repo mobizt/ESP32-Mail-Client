@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.0.3
+ *Mail Client Arduino Library for ESP32, version 1.0.4
  * 
- * March 21, 2019
+ * April 18, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers.
  * 
@@ -351,6 +351,24 @@ public:
   */
   String imapErrorReason();
 
+  /*
+  
+    Init SD card with GPIO pins.
+  
+    @param sck -  SPI Clock pin.
+    @param miso - SPI MISO pin.
+    @param mosi - SPI MOSI pin.
+    @param ss -   SPI Chip/Slave Select pin.
+  */
+  void sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss);
+
+  /*
+  
+    Init SD card with default GPIO pins.
+  
+  */
+  void sdBegin(void);
+
   struct IMAP_COMMAND_TYPE;
   struct IMAP_HEADER_TYPE;
 
@@ -358,6 +376,9 @@ protected:
   int _smtpStatus = 0;
   int _imapStatus = 0;
   bool _sdOk = false;
+  bool _sdConfigSet = false;
+  uint8_t _sck, _miso, _mosi, _ss;
+
   std::string smtpErrorReasonStr();
   std::string imapErrorReasonStr();
   void set_message_header(string &header, std::string &message, bool htmlFormat);
@@ -594,17 +615,6 @@ public:
 
   */
   void setTextMessage(bool textFormat);
-
-  /*
-
-    Enable/disable header only result.
-    
-    @param headerOnly - Boolean flag to enable/disable header only result.
-    
-    The default value is true.
-
-  */
-  void setHeaderOnly(bool headerOnly);
 
   /*
     
@@ -1091,7 +1101,6 @@ public:
 
   */
   void clearMessageData();
-
 
   friend ESP32_MailClient;
 
