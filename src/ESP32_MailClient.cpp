@@ -554,10 +554,12 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
         res = waitIMAPResponse(http, imapData, cbData, IMAP_COMMAND_TYPE::FETCH_BODY_MIME, "", "", 0, mailIndex, messageDataIndex, _part);
         if (res)
         {
-          if (imapData._messageDataCount[mailIndex] < messageDataIndex + 1)
+         
+          if (imapData._messageDataInfo[mailIndex].size() < messageDataIndex + 1)
           {
-            imapData._messageDataInfo[mailIndex].push_back(messageBodyData());
-            imapData._messageDataCount[mailIndex]++;
+            messageBodyData b;
+            imapData._messageDataInfo[mailIndex].push_back(b);
+            imapData._messageDataCount[mailIndex] = imapData._messageDataInfo[mailIndex].size();
           }
 
           if (imapData._messageDataInfo[mailIndex][messageDataIndex]._contentType == "")
@@ -1508,22 +1510,21 @@ std::string ESP32_MailClient::imapErrorReasonStr()
   return res;
 }
 
-void ESP32_MailClient::sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss)
+bool ESP32_MailClient::sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss)
 {
-
   _sck = sck;
   _miso = miso;
   _mosi = mosi;
   _ss = ss;
   _sdConfigSet = true;
   SPI.begin(_sck, _miso, _mosi, _ss);
-  SD.begin(_ss, SPI);
+  return SD.begin(_ss, SPI);
 }
 
-void ESP32_MailClient::sdBegin(void)
+bool ESP32_MailClient::sdBegin(void)
 {
   _sdConfigSet = false;
-  SD.begin();
+  return SD.begin();
 }
 
 void ESP32_MailClient::set_message_header(string &header, string &message, bool htmlFormat)
@@ -1688,6 +1689,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
       yield();
 
       c = tcp->read();
+      //Serial.print(c);
 
       if (payloadLength > 0 && c < 0xff && !completeResp)
         charCount++;
@@ -1709,7 +1711,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
           if (imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_TEXT || imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_ATTACHMENT)
             charCount -= endResp1.length() - 7;
 
-          completeResp = true;
+          completeResp = true;         
         }
       }
 
@@ -1800,8 +1802,14 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
           }
         }
 
-        if (millis() - dataTime > http.tcpTimeout + 30000 || (payloadLength > 0 && charCount == payloadLength && completeResp))
+        if (millis() - dataTime > http.tcpTimeout + (30 *1000) || (payloadLength > 0 && charCount == payloadLength && completeResp)){
+          
+          if(charCount < payloadLength || !completeResp)
+           tcpFlush(tcp);
+
           break;
+        }
+          
       }
 
       if (c == '\n')
@@ -1837,11 +1845,13 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
 
           if (payloadLength > 0 && validResponse)
           {
+           
 
-            if (imapData._messageDataCount[mailIndex] < messageDataIndex + 1)
+            if (imapData._messageDataInfo[mailIndex].size() < messageDataIndex + 1)
             {
-              imapData._messageDataInfo[mailIndex].push_back(messageBodyData());
-              imapData._messageDataCount[mailIndex]++;
+              messageBodyData b;
+              imapData._messageDataInfo[mailIndex].push_back(b);
+              imapData._messageDataCount[mailIndex]=imapData._messageDataInfo[mailIndex].size();
             }
 
             p1 = tmp.find(ESP32_MAIL_STR_167);
@@ -1851,12 +1861,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
               p2 = lineBuf.find(";", p1 + strlen(ESP32_MAIL_STR_167));
               if (p2 != std::string::npos)
               {
-
-                if (imapData._messageDataInfo[mailIndex].size() < messageDataIndex + 1)
-                {
-                  messageBodyData b;
-                  imapData._messageDataInfo[mailIndex].push_back(b);
-                }
+               
 
                 if (validSubstringRange(p1 + strlen(ESP32_MAIL_STR_167), p2 - p1 - strlen(ESP32_MAIL_STR_167), lineBuf))
                   imapData._messageDataInfo[mailIndex][messageDataIndex]
@@ -2732,6 +2737,18 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
   std::string().swap(hpath);
 
   return validResponse;
+}
+
+void ESP32_MailClient::tcpFlush(WiFiClient *tcp)
+{
+  if (tcp)
+  {
+    if (tcp->available() > 0)
+    {
+      tcp->flush();
+      delay(50);
+    }
+  }
 }
 
 bool ESP32_MailClient::validSubstringRange(int start, int length, std::string str)

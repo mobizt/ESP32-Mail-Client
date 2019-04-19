@@ -14,6 +14,8 @@ This following devices were tested and work well.
  * Sparkfun ESP32 Thing
  * NodeMCU-32
  * WEMOS LOLIN32
+ * TTGO T8 V1.8
+ * M5Stack ESP32
 
 
  
@@ -273,9 +275,11 @@ param *`m0si`* - SPI MOSI pin.
 
 param *`ss`* - SPI Chip/Slave Select pin.
 
+return *`Boolean`* type status indicates the success of operation.
+
 
 ```C++
-void sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss);
+bool sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss);
 ```
 
 
@@ -285,9 +289,11 @@ void sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss);
 
 **Init SD card with default GPIO pins.**
 
+return *`Boolean`* type status indicates the success of operation.
+
 
 ```C++
-void sdBegin(void);
+bool sdBegin(void);
 ```
 
 

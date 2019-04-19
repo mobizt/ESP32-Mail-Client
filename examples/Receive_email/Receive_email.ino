@@ -1,3 +1,13 @@
+/*
+ * Created by K. Suwatchai (Mobizt)
+ * 
+ * Email: k_suwatchai@hotmail.com
+ * 
+ * Github: https://github.com/mobizt
+ * 
+ * Copyright (c) 2019 mobizt
+ *
+*/
 
 
 //Required HTTPClientESP32Ex library, can be installed from https : //github.com/mobizt/HTTPClientESP32Ex

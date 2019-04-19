@@ -359,15 +359,20 @@ public:
     @param miso - SPI MISO pin.
     @param mosi - SPI MOSI pin.
     @param ss -   SPI Chip/Slave Select pin.
+
+    @return Boolean type status indicates the success of operation.
+
   */
-  void sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss);
+  bool sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss);
 
   /*
   
     Init SD card with default GPIO pins.
+
+    @return Boolean type status indicates the success of operation.
   
   */
-  void sdBegin(void);
+  bool sdBegin(void);
 
   struct IMAP_COMMAND_TYPE;
   struct IMAP_HEADER_TYPE;
@@ -383,6 +388,7 @@ protected:
   std::string imapErrorReasonStr();
   void set_message_header(string &header, std::string &message, bool htmlFormat);
   void set_attachment_header(uint8_t index, std::string &header, attachmentData &attach);
+  void tcpFlush(WiFiClient *tcp);
   bool validSubstringRange(int start, int length, std::string str);
   double base64DecodeSize(std::string lastBase64String, int length);
   unsigned char *base64_decode_char(const unsigned char *src, size_t len, size_t *out_len);
