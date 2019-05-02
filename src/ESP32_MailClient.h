@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.0.4
+ *Mail Client Arduino Library for ESP32, version 1.0.5
  * 
- * April 18, 2019
+ * May 2, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers.
  * 
@@ -76,7 +76,6 @@ class MessageData;
 
 typedef void (*sendStatusCallback)(SendStatus);
 typedef void (*readStatusCallback)(ReadStatus);
-typedef void (*downloadStatusCallback)(DownloadProgress);
 
 static const char ESP32_MAIL_STR_1[] PROGMEM = "Content-Type: multipart/mixed; boundary=\"";
 static const char ESP32_MAIL_STR_2[] PROGMEM = "{BOUNDARY}";
@@ -299,6 +298,8 @@ static const char ESP32_MAIL_STR_218[] PROGMEM = "[";
 static const char ESP32_MAIL_STR_219[] PROGMEM = "]";
 static const char ESP32_MAIL_STR_220[] PROGMEM = "MIME";
 static const char ESP32_MAIL_STR_221[] PROGMEM = "connection lost";
+static const char ESP32_MAIL_STR_222[] PROGMEM = "$ OK Fetch completed";
+static const char ESP32_MAIL_STR_223[] PROGMEM = "completed";
 
 static bool compFunc(std::string i, std::string j)
 {
@@ -441,13 +442,13 @@ public:
   friend SMTPData;
 
 protected:
-  uint8_t _index;
-  std::vector<std::vector<uint8_t *>> _buf;
-  std::vector<std::string> _filename;
-  std::vector<uint8_t> _id;
-  std::vector<uint8_t> _type;
-  std::vector<uint16_t> _size;
-  std::vector<std::string> _mime_type;
+  uint8_t _index = 0;
+  std::vector<std::vector<uint8_t *>> _buf = std::vector<std::vector<uint8_t *>>();
+  std::vector<std::string> _filename = std::vector<std::string>();
+  std::vector<uint8_t> _id = std::vector<uint8_t>();
+  std::vector<uint8_t> _type = std::vector<uint8_t>();
+  std::vector<uint16_t> _size = std::vector<uint16_t>();
+  std::vector<std::string> _mime_type = std::vector<std::string>();
 
   void add(const String &fileName, const String &mimeType, uint8_t *data, uint16_t size);
   void remove(uint8_t index);
@@ -1142,29 +1143,29 @@ private:
   int _searchCount;
   readStatusCallback _readCallback = NULL;
 
-  std::vector<std::string> _date;
-  std::vector<std::string> _subject;
-  std::vector<std::string> _subject_charset;
-  std::vector<std::string> _from;
-  std::vector<std::string> _from_charset;
-  std::vector<std::string> _to;
-  std::vector<std::string> _to_charset;
-  std::vector<std::string> _cc;
-  std::vector<std::string> _cc_charset;
-  std::vector<std::string> _msgNum;
-  std::vector<std::string> _msgID;
-  std::vector<std::string> _contentLanguage;
-  std::vector<std::string> _acceptLanguage;
+  std::vector<std::string> _date = std::vector<std::string>();
+  std::vector<std::string> _subject = std::vector<std::string>();
+  std::vector<std::string> _subject_charset = std::vector<std::string>();
+  std::vector<std::string> _from = std::vector<std::string>();
+  std::vector<std::string> _from_charset = std::vector<std::string>();
+  std::vector<std::string> _to= std::vector<std::string>();
+  std::vector<std::string> _to_charset = std::vector<std::string>();
+  std::vector<std::string> _cc= std::vector<std::string>();
+  std::vector<std::string> _cc_charset = std::vector<std::string>();
+  std::vector<std::string> _msgNum= std::vector<std::string>();
+  std::vector<std::string> _msgID = std::vector<std::string>();
+  std::vector<std::string> _contentLanguage = std::vector<std::string>();
+  std::vector<std::string> _acceptLanguage = std::vector<std::string>();
 
-  std::vector<std::string> _folders;
-  std::vector<std::string> _flag;
-  std::vector<int> _attachmentCount;
-  std::vector<std::vector<messageBodyData>> _messageDataInfo;
-  std::vector<int> _totalAttachFileSize;
-  std::vector<int> _downloadedByte;
-  std::vector<int> _messageDataCount;
-  std::vector<std::string> _errorMsg;
-  std::vector<bool> _error;
+  std::vector<std::string> _folders = std::vector<std::string>();
+  std::vector<std::string> _flag= std::vector<std::string>();
+  std::vector<int> _attachmentCount = std::vector<int>();
+  std::vector<std::vector<messageBodyData>> _messageDataInfo = std::vector<std::vector<messageBodyData>>();
+  std::vector<int> _totalAttachFileSize = std::vector<int>();
+  std::vector<int> _downloadedByte = std::vector<int>();
+  std::vector<int> _messageDataCount = std::vector<int>();
+  std::vector<std::string> _errorMsg = std::vector<std::string>();
+  std::vector<bool> _error = std::vector<bool>();
 };
 
 class SMTPData
@@ -1564,21 +1565,21 @@ public:
 
 protected:
   int _priority = -1;
-  string _loginEmail;
-  string _loginPassword;
-  string _host;
-  uint16_t _port;
+  string _loginEmail = "";
+  string _loginPassword = "";
+  string _host = "";
+  uint16_t _port = 0;
 
-  string _fromName;
-  string _senderEmail;
-  string _subject;
-  string _message;
-  bool _htmlFormat;
+  string _fromName = "";
+  string _senderEmail ="";
+  string _subject= "";
+  string _message= "";
+  bool _htmlFormat = false;
   sendStatusCallback _sendCallback = NULL;
 
-  std::vector<std::string> _recipient;
-  std::vector<std::string> _cc;
-  std::vector<std::string> _bcc;
+  std::vector<std::string> _recipient = std::vector<std::string>();
+  std::vector<std::string> _cc = std::vector<std::string>();
+  std::vector<std::string> _bcc = std::vector<std::string>();
   attachmentData _attach;
 };
 
@@ -1593,8 +1594,8 @@ public:
   friend ESP32_MailClient;
 
 private:
-  std::string _info;
-  bool _success;
+  std::string _info = "";
+  bool _success = false;
 };
 
 class ReadStatus
@@ -1609,9 +1610,9 @@ public:
   friend ESP32_MailClient;
 
 private:
-  std::string _status;
-  std::string _info;
-  bool _success;
+  std::string _status = "";
+  std::string _info = "";
+  bool _success = false;
 };
 
 extern ESP32_MailClient MailClient;

@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.0.4
+ *Mail Client Arduino Library for ESP32, version 1.0.5
  * 
- * April 18, 2019
+ * May 2, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -131,6 +131,7 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
     if (!http.http_connect())
     {
+      
       _imapStatus = IMAP_STATUS_SERVER_CONNECT_FAILED;
 
       if (imapData._readCallback)
@@ -507,6 +508,7 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     tcp->print(imapData._msgNum[i].c_str());
     tcp->println(ESP32_MAIL_STR_144);
 
+
     if (!waitIMAPResponse(http, imapData, cbData, IMAP_COMMAND_TYPE::FETCH_BODY_HEADER, ESP32_MAIL_STR_145, "", 0, mailIndex))
     {
       if (imapData._headerOnly)
@@ -523,6 +525,8 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
       }
       goto out;
     }
+
+    
 
     if (!imapData._headerOnly)
     {
@@ -662,7 +666,7 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
             cbData._success = false;
             imapData._readCallback(cbData);
           }
-        }
+        }       
 
         for (int j = 0; j < imapData._messageDataInfo[mailIndex].size(); j++)
         {
@@ -910,6 +914,7 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
 
   if (WiFi.status() != WL_CONNECTED)
     WiFi.reconnect();
+    
 
   //Try to reconnect WiFi if lost connection
   if (WiFi.status() != WL_CONNECTED)
@@ -1122,6 +1127,8 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   buf += ESP32_MAIL_STR_15;
   tcp->println(buf.c_str());
 
+  
+
   if (waitSMTPResponse(http) != 250)
   {
     _smtpStatus = SMTP_STATUS_SEND_HEADER_FAILED;
@@ -1261,6 +1268,7 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
     goto failed;
   }
 
+
   tcp->print(buf2.c_str());
 
   tcp->print(ESP32_MAIL_STR_24);
@@ -1280,7 +1288,8 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   {
     cbData._info = ESP32_MAIL_STR_127;
     cbData._success = false;
-    smtpData._sendCallback(cbData);
+    if (smtpData._sendCallback)
+      smtpData._sendCallback(cbData);
   }
 
   for (uint8_t i = 0; i < smtpData._attach._index; i++)
@@ -1290,7 +1299,8 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
 
       cbData._info = smtpData._attach._filename[i];
       cbData._success = false;
-      smtpData._sendCallback(cbData);
+      if (smtpData._sendCallback)
+        smtpData._sendCallback(cbData);
 
       buf.clear();
       set_attachment_header(i, buf, smtpData._attach);
@@ -1310,7 +1320,8 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
       {
         cbData._info = smtpData._attach._filename[i];
         cbData._success = false;
-        smtpData._sendCallback(cbData);
+        if (smtpData._sendCallback)
+          smtpData._sendCallback(cbData);
 
         buf.clear();
         set_attachment_header(i, buf, smtpData._attach);
@@ -1689,7 +1700,6 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
       yield();
 
       c = tcp->read();
-      //Serial.print(c);
 
       if (payloadLength > 0 && c < 0xff && !completeResp)
         charCount++;
@@ -1699,20 +1709,36 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
 
       if (endResp1.length() > 0 && endResp2.length() > 0)
       {
-        if (lineBuf.find(endResp1) != std::string::npos && lineBuf.find(endResp2) != std::string::npos)
+        if (lineBuf.find(endResp1) != std::string::npos)
         {
-          completeResp = true;
+          if(endResp2 == ESP32_MAIL_STR_134){
+            //Success or completed
+            if(lineBuf.find(ESP32_MAIL_STR_134) != std::string::npos || lineBuf.find(ESP32_MAIL_STR_223) != std::string::npos){
+              completeResp = true;
+            }
+          }else if(lineBuf.find(endResp2) != std::string::npos)
+             completeResp = true;
         }
       }
       else if (endResp1.length() > 0 && endResp2.length() == 0)
       {
-        if (lineBuf.find(endResp1) != std::string::npos)
-        {
-          if (imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_TEXT || imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_ATTACHMENT)
-            charCount -= endResp1.length() - 7;
+          if(endResp1==ESP32_MAIL_STR_145){
+            //$ OK Success or $ OK Fetch completed
+            if(lineBuf.find(ESP32_MAIL_STR_145) != std::string::npos || lineBuf.find(ESP32_MAIL_STR_222) != std::string::npos)
+            {
+              if (imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_TEXT || imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_ATTACHMENT)
+                 charCount -= endResp1.length() - 7;
 
-          completeResp = true;         
-        }
+              completeResp = true;  
+            }
+
+          }else if (lineBuf.find(endResp1) != std::string::npos){
+            
+             if (imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_TEXT || imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_ATTACHMENT)
+                 charCount -= endResp1.length() - 7;
+
+              completeResp = true;
+          }
       }
 
       if (lineBuf.find(ESP32_MAIL_STR_158) != std::string::npos || lineBuf.find(ESP32_MAIL_STR_159) != std::string::npos)
@@ -2281,7 +2307,8 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
               imapData._contentLanguage[mailIndex] = lineBuf.substr(p1 + strlen(ESP32_MAIL_STR_191));
           }
 
-          if (_headerType == 0 && lineBuf != ESP32_MAIL_STR_192 && lineBuf.find(ESP32_MAIL_STR_145) == std::string::npos)
+          //not ) and not contains $ OK Success and $ OK Fetch completed
+          if (_headerType == 0 && lineBuf != ESP32_MAIL_STR_192 && (lineBuf.find(ESP32_MAIL_STR_145) == std::string::npos && lineBuf.find(ESP32_MAIL_STR_222) == std::string::npos))
           {
             if (headerType == IMAP_HEADER_TYPE::FROM)
             {
@@ -3652,8 +3679,6 @@ void IMAPData::empty()
   std::vector<bool>().swap(_error);
   std::vector<std::vector<messageBodyData>>().swap(_messageDataInfo);
   std::vector<std::string>().swap(_errorMsg);
-  readStatusCallback _readCallback = NULL;
-  downloadStatusCallback _downloadCallback = NULL;
 }
 
 void IMAPData::clearMessageData()
@@ -3755,6 +3780,7 @@ void attachmentData::free()
   std::vector<uint8_t>().swap(_type);
   std::vector<uint16_t>().swap(_size);
   std::vector<std::string>().swap(_mime_type);
+  _index = 0;
 }
 
 String attachmentData::getFileName(uint8_t index)

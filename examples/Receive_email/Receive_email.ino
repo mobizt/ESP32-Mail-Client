@@ -242,9 +242,6 @@ void readCallback(ReadStatus msg)
 
       Serial.println();
     }
-
-    //To empty imapData object
-    //imapData.empty();
   }
 }
 
