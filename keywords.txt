@@ -8,7 +8,7 @@
 
 IMAPData	KEYWORD1
 SMTPData	KEYWORD1
-attachmentData  KEYWORD1
+attachmentData	KEYWORD1
 SendStatus	KEYWORD1
 messageBodyData	KEYWORD1
 DownloadProgress	KEYWORD1
