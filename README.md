@@ -23,11 +23,11 @@ This following devices were tested and work well.
 
 * Support Email sending with or without attachment via IMAP server.
 
-* Working with SD card allows large file attachment supported or SPIFFS for small file.
+* Working with SD card allows large file attachment supported or SPIFFS for small file size attachment.
 
 * Support Email reading via search and fetch modes (with or without attachment downloads).
 
-* Support large attachment download via SD card or SPIFFS for small file.
+* Support large attachment download via SD card or SPIFFS for small file size attachment.
 
 * Message text and its header are able to download and save to SD card or SPIFFS.
 
