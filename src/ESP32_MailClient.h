@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.1.1
+ *Mail Client Arduino Library for ESP32, version 1.1.2
  * 
- * June 16, 2019
+ * June 17, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers.
  * 
@@ -38,6 +38,8 @@
 #include <string>
 #include "SD.h"
 #include "SPI.h"
+#include "FS.h"
+#include "SPIFFS.h"
 #include "RFC2047.h"
 
 #define FORMAT_SPIFFS_IF_FAILED true
@@ -53,8 +55,9 @@ using namespace std;
 #define SMTP_STATUS_AUTHEN_FAILED 5
 #define SMTP_STATUS_USER_LOGIN_FAILED 6
 #define SMTP_STATUS_PASSWORD_LOGIN_FAILED 7
-#define SMTP_STATUS_SEND_HEADER_FAILED 8
-#define SMTP_STATUS_SEND_BODY_FAILED 9
+#define SMTP_STATUS_SEND_HEADER_SENDER_FAILED 8
+#define SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED 9
+#define SMTP_STATUS_SEND_BODY_FAILED 10
 
 #define IMAP_STATUS_SERVER_CONNECT_FAILED 1
 #define IMAP_STATUS_IMAP_RESPONSE_FAILED 2
@@ -78,6 +81,12 @@ class MessageData;
 
 typedef void (*sendStatusCallback)(SendStatus);
 typedef void (*readStatusCallback)(ReadStatus);
+
+struct MailClientStorageType
+{
+  static const uint8_t SPIFFS = 0;
+  static const uint8_t SD = 1;
+};
 
 static const char ESP32_MAIL_STR_1[] PROGMEM = "Content-Type: multipart/mixed; boundary=\"";
 static const char ESP32_MAIL_STR_2[] PROGMEM = "{BOUNDARY}";
@@ -300,6 +309,7 @@ static const char ESP32_MAIL_STR_218[] PROGMEM = "[";
 static const char ESP32_MAIL_STR_219[] PROGMEM = "]";
 static const char ESP32_MAIL_STR_220[] PROGMEM = "MIME";
 static const char ESP32_MAIL_STR_221[] PROGMEM = "connection lost";
+static const char ESP32_MAIL_STR_222[] PROGMEM = "set recipient failed";
 
 __attribute__((used)) static bool compFunc(uint32_t i, uint32_t j)
 {
@@ -394,7 +404,7 @@ protected:
   unsigned char *base64_decode_char(const unsigned char *src, size_t len, size_t *out_len);
   std::string base64_encode_string(const unsigned char *src, size_t len);
   void send_base64_encode_data(WiFiClient *tcp, const unsigned char *src, size_t len);
-  void send_base64_encode_file(WiFiClient *tcp, const char *filePath);
+  void send_base64_encode_file(WiFiClient *tcp, File file);
   int waitSMTPResponse(HTTPClientESP32Ex &http);
   bool waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapData, ReadStatus &cbData, uint8_t imapCommandType = 0, int maxChar = 0, int mailIndex = -1, int messageDataIndex = -1, std ::string part = "");
   void createDirs(std::string dirs);
@@ -589,6 +599,15 @@ public:
 
   */
   void setFechUID(const String fetchUID);
+
+  /*
+
+    Set storage type to save download attached file or messages.
+    
+    @param storageType - The storage type to save file, MailClientStorageType::SD or MailClientStorageType::SPIFFS
+
+  */
+  void setFileStorageType(uint8_t storageType);
 
   /*
 
@@ -1114,6 +1133,7 @@ private:
   size_t _totalMessage = 0;
   std::string _host = "";
   uint16_t _port = 993;
+  uint8_t _storageType = 1;
   std::string _loginEmail = "";
   std::string _loginPassword = "";
   std::string _currentFolder = "INBOX";
@@ -1483,6 +1503,7 @@ public:
 
   */
   uint8_t attachDataCount();
+  
 
   /*
 
@@ -1511,6 +1532,15 @@ public:
 
   */
   void removeAttachFile(uint8_t index);
+
+  /*
+
+    Set storage type for all attach files.
+    
+    @param storageType - The storage type to read attach file, MailClientStorageType::SD or MailClientStorageType::SPIFFS
+
+  */
+  void setFileStorageType(uint8_t storageType);
 
   /*
 
@@ -1567,6 +1597,7 @@ protected:
   string _loginPassword = "";
   string _host = "";
   uint16_t _port = 0;
+  uint8_t _storageType = 1;
 
   string _fromName = "";
   string _senderEmail = "";

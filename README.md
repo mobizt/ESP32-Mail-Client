@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 v 1.1.1
+# Mail Client Arduino Library for ESP32 v 1.1.2
 
 This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download via SMTP and IMAP servers. 
 
@@ -23,13 +23,13 @@ This following devices were tested and work well.
 
 * Support Email sending with or without attachment via IMAP server.
 
-* Working with SD card allows large file attachment supported.
+* Working with SD card allows large file attachment supported or SPIFFS for small file.
 
 * Support Email reading via search and fetch modes (with or without attachment downloads).
 
-* Support large attachment download via SD card.
+* Support large attachment download via SD card or SPIFFS for small file.
 
-* Message text and its header are able to download and save to SD card.
+* Message text and its header are able to download and save to SD card or SPIFFS.
 
 * Support Email message fetch and search via IMAP command as in RFC 3501 (depending on IMAP server implementation).
 
@@ -123,6 +123,7 @@ To set message text, use `smtpData.setMessage` e.g. `smtpData.setMessage("This i
 To set sender, use `smtpData.addRecipient` e.g. `smtpData.addRecipient("SOME_RECIPIENT@SOME_MAIL.com")`.
 
 To add attachment, use `smtpData.addAttachData` e.g. `smtpData.addAttachData("test.png", "image/png", (uint8_t *)imageData, sizeof imageData);`.
+
 
 When completed all required message data, sending Email `MailClient.sendMail(http, smtpData)`.
 
@@ -478,6 +479,20 @@ Specify the message UID to fetch (read) only specific message instead of search.
 ```C++
 void setFechUID(const String fetchUID);
 ```
+
+
+
+
+
+**Set storage type to save download attached file or messages.**
+
+param *`storageType`* - The storage type to save file, MailClientStorageType::SD or MailClientStorageType::SPIFFS
+
+```C++
+void setFileStorageType(uint8_t storageType);
+```
+
+
 
 
 
@@ -1518,6 +1533,19 @@ param *`fileName`* - The file name of the attachment file to remove.
 ```C++
 void removeAttachFile(const String &filePath);
 ```
+
+
+
+
+**Set storage type for all attach files.**
+
+param *`storageType`* - The storage type to read attach file, MailClientStorageType::SD or MailClientStorageType::SPIFFS.
+
+```C++
+void setFileStorageType(uint8_t storageType);
+```
+
+
 
 
 

@@ -136,6 +136,10 @@ void setup()
   //Set to get attachment downloading progress status.
   imapData.setDownloadReport(true);
 
+  //Set the storage types to save download attachments or messages (SD is default)
+  //imapData.setFileStorageType(MailClientStorageType::SPIFFS)
+  imapData.setFileStorageType(MailClientStorageType::SD);
+
   MailClient.readMail(http, imapData);
 }
 

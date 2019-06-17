@@ -62,7 +62,7 @@ void setup()
 
   Serial.println("Mounting SD Card...");
 
-  if (SD.begin())
+  if (SD.begin()) // MailClient.sdBegin(14,2,15,13) for TTGO T8 v1.7 or 1.8
   {
 
     Serial.println("Preparing attach file...");
@@ -135,6 +135,11 @@ void setup()
   //Two files that previousely created.
   smtpData.addAttachFile("/binary_file.dat");
   smtpData.addAttachFile("/text_file.txt");
+
+  //Set the storage types to read the attach files (SD is default)
+  //smtpData.setFileStorageType(MailClientStorageType::SPIFFS);
+  smtpData.setFileStorageType(MailClientStorageType::SD);
+
 
 
   smtpData.setSendCallback(sendCallback);
