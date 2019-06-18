@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 v 1.1.2
+# Mail Client Arduino Library for ESP32 v 1.1.3
 
 This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download via SMTP and IMAP servers. 
 
@@ -187,7 +187,7 @@ Total message from search result via `imapData.searchCount`.
 
 Available message from search result (limited by `imapData.setSearchLimit`) via `imapData.availableMessages`.
 
-When fetch specific message via `imapData.setFechUID`,  availability of attachment file can be determined via 
+When fetch specific message via `imapData.setFetchUID`,  availability of attachment file can be determined via 
 `imapData.getAttachmentCount` for that message which will be automatically download by setting `imapData.setDownloadAttachment(true)` 
 prior to `MailClient.readMail`.
 
@@ -349,9 +349,9 @@ void setAttachmentSizeLimit(size_t size);
 
 **Set the search criteria used in selected mailbox search.**
 
-In case of message UID was set via setFechUID function, search operation will not process,
+In case of message UID was set via setFetchUID function, search operation will not process,
 
-you need to clear message UID by calling imapData.setFechUID("") to clear.
+you need to clear message UID by calling imapData.setFetchUID("") to clear.
 
 param *`criteria`* - Search criteria String.
 
@@ -450,8 +450,25 @@ Sequence set ranges are permitted.
 *`UNSEEN`* - Messages that do not have the \Seen flag set.
 
 ```C++
-void setSearchCriteria(const String criteria);
+void setSearchCriteria(const String &criteria);
 ```
+
+
+
+
+
+**Set to search the unseen message.**
+
+param *`unseenSearch`* - Boolean flag to enable unseen message search.
+
+This function will be overridden (omitted) by setFetchUID as setSearchCriteria.
+
+```C++
+void setSearchUnseenMessage(bool unseenSearch);
+```
+
+
+
 
 
 
@@ -464,7 +481,7 @@ All text/html message and attachemnts will be saved to message UID folder which 
 e.g. *`"/{DEFINED_PATH}/{MESSAGE_UID}/{ATTACHMENT_FILE...}"`*.
 
 ```C++
-void setSaveFilePath(const String path);
+void setSaveFilePath(const String &path);
 ```
 
 
@@ -477,7 +494,7 @@ param *`fetchUID`* - The message UID.
 Specify the message UID to fetch (read) only specific message instead of search.
 
 ```C++
-void setFechUID(const String fetchUID);
+void setFetchUID(const String &fetchUID);
 ```
 
 
@@ -754,7 +771,7 @@ String getDate(uint16_t messageIndex);
 
 param *`messageIndex`* - The index of message.
 
-return *`UID String that can be use in setFechUID.`*
+return *`UID String that can be use in setFetchUID.`*
 
 ```C++
 String getUID(uint16_t messageIndex);

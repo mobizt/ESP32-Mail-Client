@@ -91,7 +91,7 @@ void setup()
 
   //Clear fetch UID
   //If fetch UID was set, no search is perform.
-  imapData.setFechUID("");
+  imapData.setFetchUID("");
 
   //imapData.setSearchCriteria("SINCE 10-Feb-2019");
   //imapData.setSearchCriteria("UID 700:*");

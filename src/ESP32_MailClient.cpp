@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.1.2
+ *Mail Client Arduino Library for ESP32, version 1.1.3
  * 
- * June 17, 2019
+ * June 18, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -57,7 +57,6 @@ struct ESP32_MailClient::IMAP_HEADER_TYPE
   static const uint8_t CONT_LANG = 7;
   static const uint8_t ACCEPT_LANG = 8;
 };
-
 
 bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 {
@@ -206,7 +205,6 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     imapData._headerOnly = false;
   else
     imapData._headerOnly = true;
-  
 
   if (imapData._headerOnly)
   {
@@ -343,7 +341,7 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
         if (imapData._searchCriteria[i] == ' ')
         {
-          if (imapData._uidSearch && buf == ESP32_MAIL_STR_140)
+          if ((imapData._uidSearch && buf == ESP32_MAIL_STR_140) || (imapData._unseen && buf.find(ESP32_MAIL_STR_224) != std::string::npos))
             buf.clear();
 
           if (buf != ESP32_MAIL_STR_141 && buf != "")
@@ -356,12 +354,14 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
         }
       }
 
+      if (imapData._unseen && imapData._searchCriteria.find(ESP32_MAIL_STR_223) == std::string::npos)
+        command += ESP32_MAIL_STR_223;
+
       if (buf.length() > 0)
       {
         command += ESP32_MAIL_STR_131;
         command += buf;
       }
-
 
       client->println(command.c_str());
 
@@ -607,19 +607,18 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
         if (!_sdOk)
         {
-          if(imapData._storageType==MailClientStorageType::SD){
-          _sdOk = sdTest();
-           delay(200);
-          if (_sdOk)
-             if (!SD.exists(imapData._savePath.c_str()))
+          if (imapData._storageType == MailClientStorageType::SD)
+          {
+            _sdOk = sdTest();
+            delay(200);
+            if (_sdOk)
+              if (!SD.exists(imapData._savePath.c_str()))
                 createDirs(imapData._savePath);
-          }else if(imapData._storageType==MailClientStorageType::SPIFFS)
-            _sdOk =SPIFFS.begin(true);
-         
-         }
-        
-      } 
-
+          }
+          else if (imapData._storageType == MailClientStorageType::SPIFFS)
+            _sdOk = SPIFFS.begin(true);
+        }
+      }
 
       if (imapData._messageDataInfo[mailIndex].size() > 0)
       {
@@ -741,18 +740,16 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
         }
       }
 
-      
-     if(imapData._storageType==MailClientStorageType::SD)
-    {
+      if (imapData._storageType == MailClientStorageType::SD)
+      {
         if (_sdOk)
-        SD.end();
-
-    }else  if(imapData._storageType==MailClientStorageType::SPIFFS)
-    {
-       if (_sdOk)
-        SPIFFS.end();
-    }
-        
+          SD.end();
+      }
+      else if (imapData._storageType == MailClientStorageType::SPIFFS)
+      {
+        if (_sdOk)
+          SPIFFS.end();
+      }
 
       _sdOk = false;
     }
@@ -1300,47 +1297,43 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
     else
     {
 
-       
-      if (!_sdOk){
-         if(smtpData._storageType==MailClientStorageType::SD)
-        _sdOk = sdTest();
-        else  if(smtpData._storageType==MailClientStorageType::SPIFFS)
-        _sdOk = SPIFFS.begin(true);
+      if (!_sdOk)
+      {
+        if (smtpData._storageType == MailClientStorageType::SD)
+          _sdOk = sdTest();
+        else if (smtpData._storageType == MailClientStorageType::SPIFFS)
+          _sdOk = SPIFFS.begin(true);
       }
-      
-
 
       if (!_sdOk)
         continue;
 
-        bool file_existed =false;
-          if(smtpData._storageType==MailClientStorageType::SD)
-       file_existed =SD.exists(smtpData._attach._filename[i].c_str());
-      else if(smtpData._storageType==MailClientStorageType::SPIFFS)
-       file_existed =SPIFFS.exists(smtpData._attach._filename[i].c_str());
-    
-     
-        if (file_existed)
-         {
-          cbData._info = smtpData._attach._filename[i];
-          cbData._success = false;
-          if (smtpData._sendCallback)
+      bool file_existed = false;
+      if (smtpData._storageType == MailClientStorageType::SD)
+        file_existed = SD.exists(smtpData._attach._filename[i].c_str());
+      else if (smtpData._storageType == MailClientStorageType::SPIFFS)
+        file_existed = SPIFFS.exists(smtpData._attach._filename[i].c_str());
+
+      if (file_existed)
+      {
+        cbData._info = smtpData._attach._filename[i];
+        cbData._success = false;
+        if (smtpData._sendCallback)
           smtpData._sendCallback(cbData);
 
-           buf.clear();
-          set_attachment_header(i, buf, smtpData._attach);
-          client->print(buf.c_str());
+        buf.clear();
+        set_attachment_header(i, buf, smtpData._attach);
+        client->print(buf.c_str());
 
-          File file;
-          if(smtpData._storageType==MailClientStorageType::SD)
-          file =SD.open(smtpData._attach._filename[i].c_str(), FILE_READ);
-          else  if(smtpData._storageType==MailClientStorageType::SPIFFS)
-          file =SPIFFS.open(smtpData._attach._filename[i].c_str(), FILE_READ);
+        File file;
+        if (smtpData._storageType == MailClientStorageType::SD)
+          file = SD.open(smtpData._attach._filename[i].c_str(), FILE_READ);
+        else if (smtpData._storageType == MailClientStorageType::SPIFFS)
+          file = SPIFFS.open(smtpData._attach._filename[i].c_str(), FILE_READ);
 
-           send_base64_encode_file(client, file);
-           client->print(ESP32_MAIL_STR_34);
-         }
-      
+        send_base64_encode_file(client, file);
+        client->print(ESP32_MAIL_STR_34);
+      }
     }
   }
 
@@ -1687,14 +1680,13 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
   {
     while (client->available() || !completeResp)
     {
-      
+
       int r = client->read();
 
       if (r < 0)
         continue;
 
       c = (char)r;
-     
 
       if (payloadLength > 0 && !completeResp)
         charCount++;
@@ -1751,17 +1743,17 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
                   filepath = imapData._savePath;
                   filepath += ESP32_MAIL_STR_202;
 
-                  char * midx = new char[50];
+                  char *midx = new char[50];
                   memset(midx, 0, 50);
                   itoa(imapData._msgNum[mailIndex], midx, 10);
 
                   filepath += midx;
 
                   delete[] midx;
-                  
-                  if(imapData._storageType==MailClientStorageType::SD)
-                  if (!SD.exists(filepath.c_str()))
-                    createDirs(filepath);
+
+                  if (imapData._storageType == MailClientStorageType::SD)
+                    if (!SD.exists(filepath.c_str()))
+                      createDirs(filepath);
 
                   if (!imapData._headerSaved)
                     hpath = filepath + ESP32_MAIL_STR_203;
@@ -1781,9 +1773,9 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
                       filepath += ESP32_MAIL_STR_164;
                   }
 
-                  if(imapData._storageType==MailClientStorageType::SD)
+                  if (imapData._storageType == MailClientStorageType::SD)
                     file = SD.open(filepath.c_str(), FILE_WRITE);
-                    else if(imapData._storageType==MailClientStorageType::SPIFFS)
+                  else if (imapData._storageType == MailClientStorageType::SPIFFS)
                     file = SPIFFS.open(filepath.c_str(), FILE_WRITE);
                 }
                 else
@@ -2355,19 +2347,18 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
                     filepath.clear();
                     filepath += imapData._savePath;
                     filepath += ESP32_MAIL_STR_202;
-                   
-                  char * midx = new char[50];
-                  memset(midx, 0, 50);
-                  itoa(imapData._msgNum[mailIndex], midx, 10);
 
-                  filepath += midx;
+                    char *midx = new char[50];
+                    memset(midx, 0, 50);
+                    itoa(imapData._msgNum[mailIndex], midx, 10);
 
-                  delete[] midx;
+                    filepath += midx;
 
-                      
-                  if(imapData._storageType==MailClientStorageType::SD)
-                    if (!SD.exists(filepath.c_str()))
-                      createDirs(filepath);
+                    delete[] midx;
+
+                    if (imapData._storageType == MailClientStorageType::SD)
+                      if (!SD.exists(filepath.c_str()))
+                        createDirs(filepath);
 
                     if (!imapData._headerSaved)
                       hpath = filepath + ESP32_MAIL_STR_203;
@@ -2386,12 +2377,11 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
                       else
                         filepath += ESP32_MAIL_STR_164;
                     }
-                    
-                     if(imapData._storageType==MailClientStorageType::SD)
-                    file = SD.open(filepath.c_str(), FILE_WRITE);
-                    else  if(imapData._storageType==MailClientStorageType::SPIFFS)
-                     file = SPIFFS.open(filepath.c_str(), FILE_WRITE);
 
+                    if (imapData._storageType == MailClientStorageType::SD)
+                      file = SD.open(filepath.c_str(), FILE_WRITE);
+                    else if (imapData._storageType == MailClientStorageType::SPIFFS)
+                      file = SPIFFS.open(filepath.c_str(), FILE_WRITE);
                   }
                   else
                   {
@@ -2429,11 +2419,9 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
             {
 
               imapData._messageDataInfo[mailIndex][messageDataIndex]._sdFileOpenWrite = true;
-              
-            
+
               if (_sdOk)
               {
-                
 
                 downloadReq = true;
 
@@ -2441,26 +2429,26 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
                 filepath += imapData._savePath;
                 filepath += ESP32_MAIL_STR_202;
 
-                  char * midx = new char[50];
-                  memset(midx, 0, 50);
-                  itoa(imapData._msgNum[mailIndex], midx, 10);
+                char *midx = new char[50];
+                memset(midx, 0, 50);
+                itoa(imapData._msgNum[mailIndex], midx, 10);
 
-                  filepath += midx;
+                filepath += midx;
 
-                  delete[] midx;
-                
-                if(imapData._storageType==MailClientStorageType::SD)
-                if (!SD.exists(filepath.c_str()))
-                  createDirs(filepath);
+                delete[] midx;
+
+                if (imapData._storageType == MailClientStorageType::SD)
+                  if (!SD.exists(filepath.c_str()))
+                    createDirs(filepath);
 
                 filepath += ESP32_MAIL_STR_202;
 
                 filepath += imapData._messageDataInfo[mailIndex][messageDataIndex]._filename;
 
-                if(imapData._storageType==MailClientStorageType::SD)
-                file = SD.open(filepath.c_str(), FILE_WRITE);
-                else if(imapData._storageType==MailClientStorageType::SPIFFS)
-                 file = SPIFFS.open(filepath.c_str(), FILE_WRITE);
+                if (imapData._storageType == MailClientStorageType::SD)
+                  file = SD.open(filepath.c_str(), FILE_WRITE);
+                else if (imapData._storageType == MailClientStorageType::SPIFFS)
+                  file = SPIFFS.open(filepath.c_str(), FILE_WRITE);
               }
               else
               {
@@ -2475,7 +2463,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
 
             if (_sdOk)
             {
-               
+
               unsigned char *decoded = base64_decode_char((const unsigned char *)lineBuf.c_str(), lineBuf.length(), &outputLength);
 
               downloadedByte += outputLength;
@@ -2487,10 +2475,10 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
               {
                 file.write((const uint8_t *)decoded, outputLength);
 
-                if(imapData._storageType==MailClientStorageType::SPIFFS)
-                delayMicroseconds(1);
+                if (imapData._storageType == MailClientStorageType::SPIFFS)
+                  delayMicroseconds(1);
                 else
-                yield();
+                  yield();
 
                 if (imapData._downloadReport)
                 {
@@ -2616,11 +2604,11 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
 
   if (hpath != "")
   {
-    
-     if(imapData._storageType==MailClientStorageType::SD)
-    file = SD.open(hpath.c_str(), FILE_WRITE);
-    else  if(imapData._storageType==MailClientStorageType::SPIFFS)
-     file = SPIFFS.open(hpath.c_str(), FILE_WRITE);
+
+    if (imapData._storageType == MailClientStorageType::SD)
+      file = SD.open(hpath.c_str(), FILE_WRITE);
+    else if (imapData._storageType == MailClientStorageType::SPIFFS)
+      file = SPIFFS.open(hpath.c_str(), FILE_WRITE);
 
     file.print(ESP32_MAIL_STR_99);
     file.println(imapData._date[mailIndex].c_str());
@@ -2737,7 +2725,6 @@ double ESP32_MailClient::base64DecodeSize(std::string lastBase64String, int leng
   result = (ceil(length / 4) * 3) - padding;
   return result;
 }
-
 
 unsigned char *ESP32_MailClient::base64_decode_char(const unsigned char *src, size_t len, size_t *out_len)
 {
@@ -3058,13 +3045,18 @@ void IMAPData::setAttachmentSizeLimit(size_t size)
   _attacement_max_size = size;
 }
 
-void IMAPData::setSearchCriteria(const String criteria)
+void IMAPData::setSearchCriteria(const String &criteria)
 {
   _searchCriteria.clear();
   _searchCriteria = criteria.c_str();
 }
 
-void IMAPData::setSaveFilePath(const String path)
+void IMAPData::setSearchUnseenMessage(bool unseenSearch)
+{
+  _unseen = unseenSearch;
+}
+
+void IMAPData::setSaveFilePath(const String &path)
 {
   _savePath.clear();
   if (path.c_str()[0] != '/')
@@ -3076,7 +3068,7 @@ void IMAPData::setSaveFilePath(const String path)
     _savePath = path.c_str();
 }
 
-void IMAPData::setFechUID(const String fetchUID)
+void IMAPData::setFetchUID(const String &fetchUID)
 {
   _fetchUID.clear();
   string tmp = fetchUID.c_str();
@@ -3094,7 +3086,7 @@ void IMAPData::setFechUID(const String fetchUID)
 
 void IMAPData::setFileStorageType(uint8_t storageType)
 {
- _storageType = storageType;
+  _storageType = storageType;
 }
 
 void IMAPData::setDownloadAttachment(bool download)
@@ -4023,7 +4015,6 @@ void SMTPData::removeAttachFile(uint8_t index)
 void SMTPData::setFileStorageType(uint8_t storageType)
 {
   _storageType = storageType;
-
 }
 
 void SMTPData::clearAttachData()
