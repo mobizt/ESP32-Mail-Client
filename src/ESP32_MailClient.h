@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.1.3
+ *Mail Client Arduino Library for ESP32, version 1.1.4
  * 
- * June 18, 2019
+ * June 25, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers.
  * 
@@ -71,7 +71,6 @@ using namespace std;
 static const unsigned char base64_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 class IMAPData;
-class ReadStatus;
 class SMTPData;
 class attachmentData;
 class SendStatus;
@@ -80,7 +79,7 @@ class DownloadProgress;
 class MessageData;
 
 typedef void (*sendStatusCallback)(SendStatus);
-typedef void (*readStatusCallback)(ReadStatus);
+
 
 struct MailClientStorageType
 {
@@ -318,6 +317,25 @@ __attribute__((used)) static bool compFunc(uint32_t i, uint32_t j)
   return (i > j);
 }
 
+class ReadStatus
+{
+public:
+  ReadStatus();
+  ~ReadStatus();
+  String status();
+  String info();
+  bool success();
+  void empty();
+  friend IMAPData;
+
+
+  std::string _status = "";
+  std::string _info = "";
+  bool _success = false;
+};
+
+typedef void (*readStatusCallback)(ReadStatus);
+
 class ESP32_MailClient
 {
 
@@ -418,6 +436,7 @@ class messageBodyData
 public:
   messageBodyData();
   ~messageBodyData();
+  void empty();
 
   friend ESP32_MailClient;
   friend IMAPData;
@@ -1139,9 +1158,11 @@ public:
   void clearMessageData();
 
   friend ESP32_MailClient;
+  
 
 private:
-  String getMessage(uint16_t messageIndex, bool htmlFormat);
+  String
+  getMessage(uint16_t messageIndex, bool htmlFormat);
   size_t _totalMessage = 0;
   std::string _host = "";
   uint16_t _port = 993;
@@ -1197,6 +1218,8 @@ private:
   std::vector<int> _messageDataCount = std::vector<int>();
   std::vector<std::string> _errorMsg = std::vector<std::string>();
   std::vector<bool> _error = std::vector<bool>();
+
+  ReadStatus _cbData;
 };
 
 class SMTPData
@@ -1639,22 +1662,7 @@ private:
   bool _success = false;
 };
 
-class ReadStatus
-{
-public:
-  ReadStatus();
-  ~ReadStatus();
-  String status();
-  String info();
-  bool success();
-  void empty();
-  friend ESP32_MailClient;
 
-private:
-  std::string _status = "";
-  std::string _info = "";
-  bool _success = false;
-};
 
 extern ESP32_MailClient MailClient;
 
