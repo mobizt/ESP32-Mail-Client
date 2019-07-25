@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.1.4
+ *Mail Client Arduino Library for ESP32, version 1.1.5
  * 
- * June 25, 2019
+ * June 26, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers.
  * 
@@ -77,9 +77,6 @@ class SendStatus;
 class messageBodyData;
 class DownloadProgress;
 class MessageData;
-
-typedef void (*sendStatusCallback)(SendStatus);
-
 
 struct MailClientStorageType
 {
@@ -328,13 +325,27 @@ public:
   void empty();
   friend IMAPData;
 
-
   std::string _status = "";
   std::string _info = "";
   bool _success = false;
 };
 
+class SendStatus
+{
+public:
+  SendStatus();
+  ~SendStatus();
+  String info();
+  bool success();
+  void empty();
+  friend SMTPData;
+
+  std::string _info = "";
+  bool _success = false;
+};
+
 typedef void (*readStatusCallback)(ReadStatus);
+typedef void (*sendStatusCallback)(SendStatus);
 
 class ESP32_MailClient
 {
@@ -1158,7 +1169,6 @@ public:
   void clearMessageData();
 
   friend ESP32_MailClient;
-  
 
 private:
   String
@@ -1645,24 +1655,8 @@ protected:
   std::vector<std::string> _cc = std::vector<std::string>();
   std::vector<std::string> _bcc = std::vector<std::string>();
   attachmentData _attach;
+  SendStatus _cbData;
 };
-
-class SendStatus
-{
-public:
-  SendStatus();
-  ~SendStatus();
-  String info();
-  bool success();
-  void empty();
-  friend ESP32_MailClient;
-
-private:
-  std::string _info = "";
-  bool _success = false;
-};
-
-
 
 extern ESP32_MailClient MailClient;
 
