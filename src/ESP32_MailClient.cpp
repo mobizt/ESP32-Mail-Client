@@ -1,5 +1,5 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.1.5
+ *Mail Client Arduino Library for ESP32, version 1.1.6
  * 
  * July 26, 2019
  * 
@@ -122,9 +122,11 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     imapData._readCallback(imapData._cbData);
   }
 
-  while (!http.http_connect() && count < 10)
+  http.http_begin(imapData._host.c_str(), imapData._port, ESP32_MAIL_STR_202, (const char *)NULL);
+
+  while (!http.http_connected() && count < 10)
   {
-    http.http_begin(imapData._host.c_str(), imapData._port, ESP32_MAIL_STR_202, (const char *)NULL);
+
     count++;
 
     if (!http.http_connect())
@@ -777,8 +779,6 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     imapData._cbData._success = false;
     imapData._readCallback(imapData._cbData);
   }
-
-log_out:
 
   if (http.http_connected())
     while (client->available())
