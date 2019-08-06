@@ -23,7 +23,7 @@ This following devices were tested and work well.
 
 * Support Email sending with or without attachment via IMAP server.
 
-* Support STARTTLS protocol.
+* Support SSL/TLS and STARTTLS protocols.
 
 * Working with SD card allows large file attachment supported or SPIFFS for small file size attachment.
 
@@ -44,14 +44,14 @@ For library version less than 1.2.0, required HTTPClientESP32Ex library to be in
 
 ## Prerequisites
 
-to send email via GMAIL for library version less than 1.2.0 which STARTTLS was not support, the less secure app option should be enabled. This option can be set from https://myaccount.google.com/lesssecureapps?pli=1
+To send email via GMAIL for library version less than 1.2.0 which STARTTLS was not support, the less secure app option should be enabled. This option can be set from https://myaccount.google.com/lesssecureapps?pli=1
 
 
 
 To receive Email via Gmail incoming Email service, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
 
 
-For library version 1.2.0 and greater, STARTTLS was supported and can be enable automatically when port 587 for SMTP was used or can set manually though smtpData.setSTARTTLS(true) and for IMAP though imapData.setSTARTTLS(true).
+For library version 1.2.0 and greater, STARTTLS was supported and can be enable automatically when port 587 for SMTP was used or can set manually thrugh smtpData.setSTARTTLS(true) and for IMAP through imapData.setSTARTTLS(true).
 
 
 
