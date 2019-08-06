@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.1.6
+ *Mail Client Arduino Library for ESP32, version 1.2.0
  * 
- * July 26, 2019
+ * August 6, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -70,6 +70,7 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
   int _partID = 1;
   bool res = false;
   bool _res = false;
+  bool starttls = imapData._starttls;
 
   int bufSize = 50;
 
@@ -122,14 +123,21 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     imapData._readCallback(imapData._cbData);
   }
 
-  http.http_begin(imapData._host.c_str(), imapData._port, ESP32_MAIL_STR_202, (const char *)NULL);
+  
+
+    if (imapData._rootCA.size() > 0)
+    http.http_begin(imapData._host.c_str(), imapData._port, ESP32_MAIL_STR_202, (const char *)imapData._rootCA.front());
+  else
+    http.http_begin(imapData._host.c_str(), imapData._port, ESP32_MAIL_STR_202, (const char *)NULL);
+
+  
 
   while (!http.http_connected() && count < 10)
   {
 
     count++;
 
-    if (!http.http_connect())
+    if (!http.http_connect(starttls))
     {
 
       _imapStatus = IMAP_STATUS_SERVER_CONNECT_FAILED;
@@ -148,7 +156,7 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     }
   }
 
-  if (!http.http_connect())
+  if (!http.http_connect(starttls))
   {
     goto out;
   }
@@ -163,7 +171,7 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     imapData._readCallback(imapData._cbData);
   }
 
-  //Don't expect greeting resonse due to some servers (Outlook.com and STRATO.de) do not return greeting responses
+  //Don't expect handshake from some servers
   dataTime = millis();
 
   while (client->connected() && !client->available() && millis() - 500 < dataTime)
@@ -904,6 +912,7 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   std::string buf;
   std::string buf2;
   int bufSize = 50;
+  bool starttls = smtpData._starttls;
   char *_val = new char[bufSize];
 
   WiFiClient *client;
@@ -946,9 +955,18 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
     goto failed;
   }
 
-  http.http_begin(smtpData._host.c_str(), smtpData._port, ESP32_MAIL_STR_202, (const char *)NULL);
+  
+   if (smtpData._rootCA.size() > 0)
+    http.http_begin(smtpData._host.c_str(), smtpData._port, ESP32_MAIL_STR_202, (const char *)smtpData._rootCA.front());
+  else
+    http.http_begin(smtpData._host.c_str(), smtpData._port, ESP32_MAIL_STR_202, (const char *)NULL);
 
-  if (!http.http_connect())
+  if (smtpData._port == 587)
+    starttls = true;
+
+
+
+  if (!http.http_connect(starttls))
   {
     _smtpStatus = SMTP_STATUS_SERVER_CONNECT_FAILED;
     if (smtpData._sendCallback)
@@ -961,6 +979,9 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   }
 
   client = http.http_getStreamPtr();
+
+  if (!starttls)
+  {
 
   if (smtpData._sendCallback)
   {
@@ -979,6 +1000,8 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
       smtpData._sendCallback(smtpData._cbData);
     }
     goto failed;
+  }
+
   }
 
   if (smtpData._sendCallback)
@@ -1002,26 +1025,7 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
     goto failed;
   }
 
-  if (smtpData._sendCallback)
-  {
-    smtpData._cbData._info = ESP32_MAIL_STR_122;
-    smtpData._cbData._success = false;
-    smtpData._sendCallback(smtpData._cbData);
-  }
-
-  client->println(ESP32_MAIL_STR_6);
-
-  if (waitSMTPResponse(http) != 250)
-  {
-    _smtpStatus = SMTP_STATUS_AUTHEN_NOT_SUPPORT;
-    if (smtpData._sendCallback)
-    {
-      smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
-      smtpData._cbData._success = false;
-      smtpData._sendCallback(smtpData._cbData);
-    }
-    goto failed;
-  }
+  
 
   if (smtpData._sendCallback)
   {
@@ -3067,6 +3071,25 @@ IMAPData::~IMAPData()
   empty();
 }
 
+
+void IMAPData::setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword, const char *rootCA)
+{
+
+  _host.clear();
+  _port = port;
+  _loginEmail.clear();
+  _loginPassword.clear();
+
+  _host = host.c_str();
+  _loginEmail = loginEmail.c_str();
+  _loginPassword = loginPassword.c_str();
+
+  _rootCA.clear();
+  if (strlen(rootCA) > 0)
+    _rootCA.push_back((char *)rootCA);
+}
+
+
 void IMAPData::setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword)
 {
   _host.clear();
@@ -3077,6 +3100,11 @@ void IMAPData::setLogin(const String &host, uint16_t port, const String &loginEm
   _host = host.c_str();
   _loginEmail = loginEmail.c_str();
   _loginPassword = loginPassword.c_str();
+}
+
+void IMAPData::setSTARTTLS(bool starttls)
+{
+  _starttls = starttls;
 }
 
 void IMAPData::setFolder(const String &folderName)
@@ -3838,6 +3866,23 @@ SMTPData::~SMTPData()
   empty();
 }
 
+void SMTPData::setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword, const char *rootCA)
+{
+
+  _host.clear();
+  _port = port;
+  _loginEmail.clear();
+  _loginPassword.clear();
+
+  _host = host.c_str();
+  _loginEmail = loginEmail.c_str();
+  _loginPassword = loginPassword.c_str();
+
+  _rootCA.clear();
+  if (strlen(rootCA) > 0)
+    _rootCA.push_back((char *)rootCA);
+}
+
 void SMTPData::setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword)
 {
 
@@ -3849,6 +3894,13 @@ void SMTPData::setLogin(const String &host, uint16_t port, const String &loginEm
   _host = host.c_str();
   _loginEmail = loginEmail.c_str();
   _loginPassword = loginPassword.c_str();
+
+  _rootCA.clear();
+}
+
+void SMTPData::setSTARTTLS(bool starttls)
+{
+  _starttls = starttls;
 }
 
 void SMTPData::setSender(const String &fromName, const String &senderEmail)

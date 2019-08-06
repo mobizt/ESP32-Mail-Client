@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 v 1.1.6
+# Mail Client Arduino Library for ESP32 v 1.2.0
 
 This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download via SMTP and IMAP servers. 
 
@@ -23,6 +23,8 @@ This following devices were tested and work well.
 
 * Support Email sending with or without attachment via IMAP server.
 
+* Support STARTTLS protocol.
+
 * Working with SD card allows large file attachment supported or SPIFFS for small file size attachment.
 
 * Support Email reading via search and fetch modes (with or without attachment downloads).
@@ -37,14 +39,20 @@ This following devices were tested and work well.
 
 ## Dependencies
 
-Required HTTPClientESP32Ex library to be installed. https://github.com/mobizt/HTTPClientESP32Ex
+For library version less than 1.2.0, required HTTPClientESP32Ex library to be installed. https://github.com/mobizt/HTTPClientESP32Ex
 
 
 ## Prerequisites
 
-To send Email via Gmail outgoing Email service, less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
+to send email via GMAIL for library version less than 1.2.0 which STARTTLS was not support, the less secure app option should be enabled. This option can be set from https://myaccount.google.com/lesssecureapps?pli=1
+
+
 
 To receive Email via Gmail incoming Email service, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
+
+
+For library version 1.2.0 and greater, STARTTLS was supported and can be enable automatically when port 587 for SMTP was used or can set manually though smtpData.setSTARTTLS(true) and for IMAP though imapData.setSTARTTLS(true).
+
 
 
 ## Installing
@@ -90,7 +98,7 @@ IMAPData imapData;
 
 //6. Setup SMTP server login credential in setup()
 
-smtpData.setLogin("smtp.gmail.com", 465, "YOUR_EMAIL_ACCOUNT@gmail.com", "YOUR_EMAIL_PASSWORD");
+smtpData.setLogin("smtp.gmail.com", 587, "YOUR_EMAIL_ACCOUNT@gmail.com", "YOUR_EMAIL_PASSWORD");
 
 //Or
 
@@ -311,9 +319,28 @@ param *`loginEmail`* - The Email address of account.
 
 param *`loginPassword`* - The account password.
 
+param *`rootCA`* - Root CA certificate base64 string
+
 ```C++
 void setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword);
+
+void setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword, const char *rootCA);
+
 ```
+
+
+
+
+
+**Set STARTTLS mode to enable STARTTLS protocol.**
+
+param *`starttls`* - bool flag that enables STARTTLS mode
+
+```C++
+void setSTARTTLS(bool starttls);
+```
+
+
 
 
 
@@ -1130,9 +1157,27 @@ param *`loginEmail`* - The account Email.
 
 param *`loginPassword`* - The account password.
 
+param *`rootCA`* - Root CA certificate base64 string
+
 ```C++
 void setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword);
+
+void setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword, const char *rootCA);
+
 ```
+
+
+
+
+
+**Set STARTTLS mode to enable STARTTLS protocol.**
+
+param *`starttls`* - bool flag that enables STARTTLS mode
+
+```C++
+void setSTARTTLS(bool starttls);
+```
+
 
 
 

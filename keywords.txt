@@ -30,7 +30,8 @@ sdBegin	KEYWORD2
 #########################################
 
 setLogin	KEYWORD2
-setFolder	KEYWORD2
+setSTARTTLS KEYWORD2
+setFolder   KEYWORD2
 setMessageBufferSize	KEYWORD2
 setAttachmentSizeLimit	KEYWORD2
 setSearchCriteria	KEYWORD2

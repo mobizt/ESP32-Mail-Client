@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.1.6
+ *Mail Client Arduino Library for ESP32, version 1.2.0
  * 
- * June 26, 2019
+ * August 6, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers.
  * 
@@ -33,7 +33,7 @@
 #define ESP32_MailClient_H
 
 #include <Arduino.h>
-#include <HTTPClientESP32Ex.h>
+#include "WiFiClientSecureESP32.h"
 #include <vector>
 #include <string>
 #include "SD.h"
@@ -41,6 +41,7 @@
 #include "FS.h"
 #include "SPIFFS.h"
 #include "RFC2047.h"
+#include "HTTPClientESP32Ex.h"
 
 #define FORMAT_SPIFFS_IF_FAILED true
 
@@ -355,7 +356,7 @@ public:
      
     Sending Email through SMTP server
       
-    @param http - HTTPClientESP32Ex WiFi client.
+    @param http - HTTPClientESP32 WiFi client.
     @param smtpData - SMTP Data object to hold data and instances.
 
     @return Boolean type status indicates the success of operation.
@@ -367,7 +368,7 @@ public:
   
     Reading Email through IMAP server.
   
-    @param http - HTTPClientESP32Ex WiFi client.
+    @param http - HTTPClientESP32 WiFi client.
     @param imapData - IMAP Data object to hold data and instances.
 
     @return Boolean type status indicates the success of operation.
@@ -514,10 +515,20 @@ public:
     @param port - IMAP port e.g. 993 for gmail.
     @param loginEmail - The Email address of account.    
     @param loginPassword - The account password.
+    @rootCA - Root CA certificate base64 string
 
     */
+  void setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword, const char *rootCA);
   void setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword);
 
+  /*
+    
+    Set STARTTLS mode to enable STARTTLS protocol
+
+     @param starttls - bool flag that enables STARTTLS mode
+
+  */
+  void setSTARTTLS(bool starttls);
   /*
 
     Set the mailbox folder to search or fetch.
@@ -1203,6 +1214,7 @@ private:
   size_t _attacement_max_size = 1024 * 1024;
   uint16_t _emailNumMax = 20;
   int _searchCount;
+  bool _starttls = false;
   readStatusCallback _readCallback = NULL;
 
   std::vector<std::string> _date = std::vector<std::string>();
@@ -1228,6 +1240,7 @@ private:
   std::vector<int> _messageDataCount = std::vector<int>();
   std::vector<std::string> _errorMsg = std::vector<std::string>();
   std::vector<bool> _error = std::vector<bool>();
+  std::vector<const char *> _rootCA = std::vector<const char *>();
 
   ReadStatus _cbData;
 };
@@ -1246,10 +1259,20 @@ public:
     @param port - SMTP port.
     @param loginEmail - The account Email.
     @param loginPassword - The account password.
+    @rootCA - Root CA certificate base64 string
 
-  */
+    */
+  void setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword, const char *rootCA);
   void setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword);
 
+  /*
+    
+    Set STARTTLS mode to enable STARTTLS protocol
+
+     @param starttls - bool flag that enables STARTTLS mode
+
+  */
+  void setSTARTTLS(bool starttls);
   /*
     
     Set Sender info
@@ -1649,6 +1672,7 @@ protected:
   string _subject = "";
   string _message = "";
   bool _htmlFormat = false;
+  bool _starttls = false;
   sendStatusCallback _sendCallback = NULL;
 
   std::vector<std::string> _recipient = std::vector<std::string>();
@@ -1656,6 +1680,7 @@ protected:
   std::vector<std::string> _bcc = std::vector<std::string>();
   attachmentData _attach;
   SendStatus _cbData;
+  std::vector<const char *> _rootCA = std::vector<const char *>();
 };
 
 extern ESP32_MailClient MailClient;

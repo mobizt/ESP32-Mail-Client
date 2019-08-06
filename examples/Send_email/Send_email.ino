@@ -107,7 +107,11 @@ void setup()
   Serial.println("Sending email...");
 
   //Set the Email host, port, account and password
-  smtpData.setLogin("smtp.gmail.com", 465, "YOUR_EMAIL_ACCOUNT@gmail.com", "YOUR_EMAIL_PASSWORD");
+  smtpData.setLogin("outlook.office365.com", 587, "YOUR_EMAIL_ACCOUNT@outlook.com", "YOUR_EMAIL_PASSWORD");
+
+  //For library version 1.2.0 and later which STARTTLS protocol was supported,the STARTTLS will be 
+  //enabled automatically when port 587 was used, or enable it manually using setSTARTTLS function.
+  //smtpData.setSTARTTLS(true);
 
   //Set the sender name and Email
   smtpData.setSender("ESP32", "SOME_EMAIL_ACCOUNT@SOME_EMAIL.com");
