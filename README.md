@@ -6,8 +6,7 @@ The library was test and work well with ESP32s based module.
 
 Copyright (c) 2019 K. Suwatchai (Mobizt).
 
-
-[[/media/images/esp32-mail.png|ESP32 Mail]]
+![ESP32 Mail](/media/images/esp32-mail.png)
 
 ## Tested Devices
 
