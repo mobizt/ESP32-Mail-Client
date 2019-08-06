@@ -31,6 +31,7 @@ sdBegin	KEYWORD2
 
 setLogin	KEYWORD2
 setSTARTTLS KEYWORD2
+setDebug    KEYWORD2
 setFolder   KEYWORD2
 setMessageBufferSize	KEYWORD2
 setAttachmentSizeLimit	KEYWORD2

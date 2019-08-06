@@ -1,5 +1,5 @@
 /*
- *Customized ssl_client.h to support STARTTLS protocol, version 1.0.0
+ *Customized ssl_client.h to support STARTTLS protocol, version 1.0.1
  * 
  * The MIT License (MIT)
  * Copyright (c) 2019 K. Suwatchai (Mobizt)
@@ -37,6 +37,8 @@
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/error.h"
 
+typedef void (*DebugMsgCallback)(const char* msg);
+
 typedef struct sslclient_context32 {
     int socket;
     bool starttls;
@@ -50,6 +52,7 @@ typedef struct sslclient_context32 {
     mbedtls_x509_crt ca_cert;
     mbedtls_x509_crt client_cert;
     mbedtls_pk_context client_key;
+    DebugMsgCallback _debugCallback;
 
     unsigned long handshake_timeout;
 } sslclient_context32;
@@ -63,5 +66,5 @@ int send_ssl_data(sslclient_context32 *ssl_client, const uint8_t *data, uint16_t
 int get_ssl_receive(sslclient_context32 *ssl_client, uint8_t *data, int length);
 bool verify_ssl_fingerprint(sslclient_context32 *ssl_client, const char* fp, const char* domain_name);
 bool verify_ssl_dn(sslclient_context32 *ssl_client, const char* domain_name);
-int starttlsHandshake(int s);
+int starttlsHandshake(sslclient_context32 *ssl_client, int port);
 #endif

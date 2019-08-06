@@ -1,5 +1,5 @@
 /*
- *Customized ssl_client.cpp to support STARTTLS protocol, version 1.0.0
+ *Customized ssl_client.cpp to support STARTTLS protocol, version 1.0.1
  * 
  * The MIT License (MIT)
  * Copyright (c) 2019 K. Suwatchai (Mobizt)
@@ -74,6 +74,10 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     char buf[512];
     int ret, flags;
     int enable = 1;
+
+    if (ssl_client->_debugCallback)
+        ssl_client->_debugCallback(FPSTR("INFO: starting socket"));
+
     log_v("Free internal heap before TLS %u", ESP.getFreeHeap());
 
     log_v("Starting socket");
@@ -82,6 +86,8 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     ssl_client->socket = lwip_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (ssl_client->socket < 0)
     {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("ERROR: opening socket"));
         log_e("ERROR opening socket");
         return ssl_client->socket;
     }
@@ -89,6 +95,8 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     IPAddress srv((uint32_t)0);
     if (!WiFiGenericClass::hostByName(host, srv))
     {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("ERROR: could not get ip from host"));
         return -1;
     }
 
@@ -97,6 +105,9 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = srv;
     serv_addr.sin_port = htons(port);
+
+    if (ssl_client->_debugCallback)
+        ssl_client->_debugCallback(FPSTR("INFO: connecting to Server..."));
 
     if (lwip_connect(ssl_client->socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == 0)
     {
@@ -108,23 +119,35 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         lwip_setsockopt(ssl_client->socket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
         lwip_setsockopt(ssl_client->socket, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(enable));
         lwip_setsockopt(ssl_client->socket, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable));
+
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("INFO: server connected"));
     }
     else
     {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("ERROR: connect to Server failed!"));
         log_e("Connect to Server failed!");
         return -1;
     }
 
     fcntl(ssl_client->socket, F_SETFL, fcntl(ssl_client->socket, F_GETFL, 0) | O_NONBLOCK);
 
-    if (ssl_client->starttls){
-        if ((ret = starttlsHandshake(ssl_client->socket)) != 0)
+    if (ssl_client->starttls && (port == 25 || port == 587 || port == 143))
+    {
+
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("INFO: begin STARTTLS handshake"));
+
+        if ((ret = starttlsHandshake(ssl_client, port)) != 0)
         {
             log_e("STARTTLS failed!");
             return -1;
         }
     }
-        
+
+    if (ssl_client->_debugCallback)
+        ssl_client->_debugCallback(FPSTR("INFO: seeding the random number generator"));
 
     log_v("Seeding the random number generator");
     mbedtls_entropy_init(&ssl_client->entropy_ctx);
@@ -133,8 +156,22 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
                                 &ssl_client->entropy_ctx, (const unsigned char *)pers32, strlen(pers32));
     if (ret < 0)
     {
+        if (ssl_client->_debugCallback)
+        {
+            char *error_buf = new char[100];
+            memset(buf, 0, 512);
+            strcpy_P(buf, FPSTR("ERROR: "));
+            mbedtls_strerror(ret, error_buf, 100);
+            strcat(buf, error_buf);
+            ssl_client->_debugCallback(buf);
+            delete[] error_buf;
+        }
+
         return handle_error(ret);
     }
+
+    if (ssl_client->_debugCallback)
+        ssl_client->_debugCallback(FPSTR("INFO: setting up the SSL/TLS structure..."));
 
     log_v("Setting up the SSL/TLS structure...");
 
@@ -143,6 +180,16 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
                                            MBEDTLS_SSL_TRANSPORT_STREAM,
                                            MBEDTLS_SSL_PRESET_DEFAULT)) != 0)
     {
+        if (ssl_client->_debugCallback)
+        {
+            char *error_buf = new char[100];
+            memset(buf, 0, 512);
+            strcpy_P(buf, FPSTR("ERROR: "));
+            mbedtls_strerror(ret, error_buf, 100);
+            strcat(buf, error_buf);
+            ssl_client->_debugCallback(buf);
+            delete[] error_buf;
+        }
         return handle_error(ret);
     }
 
@@ -151,6 +198,8 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
 
     if (rootCABuff != NULL)
     {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("INFO: loading CA cert"));
         log_v("Loading CA cert");
         mbedtls_x509_crt_init(&ssl_client->ca_cert);
         mbedtls_ssl_conf_authmode(&ssl_client->ssl_conf, MBEDTLS_SSL_VERIFY_REQUIRED);
@@ -159,15 +208,29 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         //mbedtls_ssl_conf_verify(&ssl_client->ssl_ctx, my_verify, NULL );
         if (ret < 0)
         {
+            if (ssl_client->_debugCallback)
+            {
+                char *error_buf = new char[100];
+                memset(buf, 0, 512);
+                strcpy_P(buf, FPSTR("ERROR: "));
+                mbedtls_strerror(ret, error_buf, 100);
+                strcat(buf, error_buf);
+                ssl_client->_debugCallback(buf);
+                delete[] error_buf;
+            }
             return handle_error(ret);
         }
     }
     else if (pskIdent != NULL && psKey != NULL)
     {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("INFO: setting up PSK"));
         log_v("Setting up PSK");
         // convert PSK from hex to binary
         if ((strlen(psKey) & 1) != 0 || strlen(psKey) > 2 * MBEDTLS_PSK_MAX_LEN)
         {
+            if (ssl_client->_debugCallback)
+                ssl_client->_debugCallback(FPSTR("ERROR: pre-shared key not valid hex or too long"));
             log_e("pre-shared key not valid hex or too long");
             return -1;
         }
@@ -197,32 +260,62 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
             psk[j / 2] |= c;
         }
         // set mbedtls config
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("INFO: set mbedtls config"));
         ret = mbedtls_ssl_conf_psk(&ssl_client->ssl_conf, psk, psk_len,
                                    (const unsigned char *)pskIdent, strlen(pskIdent));
         if (ret != 0)
         {
+            if (ssl_client->_debugCallback)
+            {
+                char *error_buf = new char[100];
+                memset(buf, 0, 512);
+                strcpy_P(buf, FPSTR("ERROR: "));
+                mbedtls_strerror(ret, error_buf, 100);
+                strcat(buf, error_buf);
+                ssl_client->_debugCallback(buf);
+                delete[] error_buf;
+            }
             log_e("mbedtls_ssl_conf_psk returned %d", ret);
             return handle_error(ret);
         }
     }
     else
     {
+
         mbedtls_ssl_conf_authmode(&ssl_client->ssl_conf, MBEDTLS_SSL_VERIFY_NONE);
         log_i("WARNING: Use certificates for a more secure communication!");
     }
 
     if (cli_cert != NULL && cli_key != NULL)
     {
+
         mbedtls_x509_crt_init(&ssl_client->client_cert);
         mbedtls_pk_init(&ssl_client->client_key);
+
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("INFO: loading CRT cert"));
 
         log_v("Loading CRT cert");
 
         ret = mbedtls_x509_crt_parse(&ssl_client->client_cert, (const unsigned char *)cli_cert, strlen(cli_cert) + 1);
         if (ret < 0)
         {
+            if (ssl_client->_debugCallback)
+            {
+                char *error_buf = new char[100];
+                memset(buf, 0, 512);
+                strcpy_P(buf, FPSTR("ERROR: "));
+                mbedtls_strerror(ret, error_buf, 100);
+                strcat(buf, error_buf);
+                ssl_client->_debugCallback(buf);
+                delete[] error_buf;
+            }
             return handle_error(ret);
         }
+
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("INFO: loading private key"));
 
         log_v("Loading private key");
         ret = mbedtls_pk_parse_key(&ssl_client->client_key, (const unsigned char *)cli_key, strlen(cli_key) + 1, NULL, 0);
@@ -235,33 +328,49 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         mbedtls_ssl_conf_own_cert(&ssl_client->ssl_conf, &ssl_client->client_cert, &ssl_client->client_key);
     }
 
+    if (ssl_client->_debugCallback)
+        ssl_client->_debugCallback(FPSTR("INFO: setting hostname for TLS session..."));
+
     log_v("Setting hostname for TLS session...");
 
     // Hostname set here should match CN in server certificate
     if ((ret = mbedtls_ssl_set_hostname(&ssl_client->ssl_ctx, host)) != 0)
     {
+        if (ssl_client->_debugCallback)
+        {
+            char *error_buf = new char[100];
+            memset(buf, 0, 512);
+            strcpy_P(buf, FPSTR("ERROR: "));
+            mbedtls_strerror(ret, error_buf, 100);
+            strcat(buf, error_buf);
+            ssl_client->_debugCallback(buf);
+            delete[] error_buf;
+        }
         return handle_error(ret);
     }
-
-    /*
-
-    ssl_client->server_fd.fd = ssl_client->socket;
-
-    if ((ret = mbedtls_net_connect(&ssl_client->server_fd, host, String(port).c_str(), MBEDTLS_NET_PROTO_TCP)) != 0)
-    {
-        return handle_error(ret);
-    }
-
-    */
 
     mbedtls_ssl_conf_rng(&ssl_client->ssl_conf, mbedtls_ctr_drbg_random, &ssl_client->drbg_ctx);
 
     if ((ret = mbedtls_ssl_setup(&ssl_client->ssl_ctx, &ssl_client->ssl_conf)) != 0)
     {
+        if (ssl_client->_debugCallback)
+        {
+            char *error_buf = new char[100];
+            memset(buf, 0, 512);
+            strcpy_P(buf, FPSTR("ERROR: "));
+            mbedtls_strerror(ret, error_buf, 100);
+            strcat(buf, error_buf);
+            ssl_client->_debugCallback(buf);
+            delete[] error_buf;
+        }
+
         return handle_error(ret);
     }
 
     mbedtls_ssl_set_bio(&ssl_client->ssl_ctx, &ssl_client->socket, mbedtls_net_send, mbedtls_net_recv, NULL);
+
+    if (ssl_client->_debugCallback)
+        ssl_client->_debugCallback(FPSTR("INFO: performing the SSL/TLS handshake..."));
 
     log_v("Performing the SSL/TLS handshake...");
     unsigned long handshake_start_time = millis();
@@ -269,6 +378,16 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     {
         if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE)
         {
+            if (ssl_client->_debugCallback)
+            {
+                char *error_buf = new char[100];
+                memset(buf, 0, 512);
+                strcpy_P(buf, FPSTR("ERROR: "));
+                mbedtls_strerror(ret, error_buf, 100);
+                strcat(buf, error_buf);
+                ssl_client->_debugCallback(buf);
+                delete[] error_buf;
+            }
             return handle_error(ret);
         }
         if ((millis() - handshake_start_time) > ssl_client->handshake_timeout)
@@ -281,6 +400,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         log_d("Protocol is %s Ciphersuite is %s", mbedtls_ssl_get_version(&ssl_client->ssl_ctx), mbedtls_ssl_get_ciphersuite(&ssl_client->ssl_ctx));
         if ((ret = mbedtls_ssl_get_record_expansion(&ssl_client->ssl_ctx)) >= 0)
         {
+
             log_d("Record expansion is %d", ret);
         }
         else
@@ -289,18 +409,25 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         }
     }
 
+    if (ssl_client->_debugCallback)
+        ssl_client->_debugCallback(FPSTR("INFO: verifying peer X.509 certificate..."));
+
     log_v("Verifying peer X.509 certificate...");
 
     if ((flags = mbedtls_ssl_get_verify_result(&ssl_client->ssl_ctx)) != 0)
     {
         bzero(buf, sizeof(buf));
         mbedtls_x509_crt_verify_info(buf, sizeof(buf), "  ! ", flags);
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("ERROR: failed to verify peer certificate!"));
         log_e("Failed to verify peer certificate! verification info: %s", buf);
         stop_ssl_socket(ssl_client, rootCABuff, cli_cert, cli_key); //It's not safe continue.
         return handle_error(ret);
     }
     else
     {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("INFO: certificate verified"));
         log_v("Certificate verified.");
     }
 
@@ -326,6 +453,8 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
 
 void stop_ssl_socket(sslclient_context32 *ssl_client, const char *rootCABuff, const char *cli_cert, const char *cli_key)
 {
+    if (ssl_client->_debugCallback)
+        ssl_client->_debugCallback(FPSTR("INFO: cleaning SSL connection"));
     log_v("Cleaning SSL connection.");
 
     if (ssl_client->socket >= 0)
@@ -349,6 +478,18 @@ int data_to_read(sslclient_context32 *ssl_client)
     //log_e("RES: %i",res);    //for low level debug
     if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE && ret < 0)
     {
+        if (ssl_client->_debugCallback)
+        {
+            char *buf = new char[512];
+            char *error_buf = new char[100];
+            memset(buf, 0, 512);
+            strcpy_P(buf, FPSTR("ERROR: "));
+            mbedtls_strerror(ret, error_buf, 100);
+            strcat(buf, error_buf);
+            ssl_client->_debugCallback(buf);
+            delete[] error_buf;
+            delete[] buf;
+        }
         return handle_error(ret);
     }
 
@@ -357,6 +498,7 @@ int data_to_read(sslclient_context32 *ssl_client)
 
 int send_ssl_data(sslclient_context32 *ssl_client, const uint8_t *data, uint16_t len)
 {
+   
     log_v("Writing HTTP request..."); //for low level debug
     int ret = -1;
 
@@ -375,6 +517,7 @@ int send_ssl_data(sslclient_context32 *ssl_client, const uint8_t *data, uint16_t
 
 int get_ssl_receive(sslclient_context32 *ssl_client, uint8_t *data, int length)
 {
+   
     //log_d( "Reading HTTP response...");   //for low level debug
     int ret = -1;
 
@@ -450,12 +593,16 @@ bool verify_ssl_fingerprint(sslclient_context32 *ssl_client, const char *fp, con
         }
         if (pos > len - 2)
         {
+            if (ssl_client->_debugCallback)
+                ssl_client->_debugCallback(FPSTR("ERROR: fingerprint too short"));
             log_d("pos:%d len:%d fingerprint too short", pos, len);
             return false;
         }
         uint8_t high, low;
         if (!parseHexNibble(fp[pos], &high) || !parseHexNibble(fp[pos + 1], &low))
         {
+            if (ssl_client->_debugCallback)
+                ssl_client->_debugCallback(FPSTR("ERROR: invalid hex sequence"));
             log_d("pos:%d len:%d invalid hex sequence: %c%c", pos, len, fp[pos], fp[pos + 1]);
             return false;
         }
@@ -468,6 +615,8 @@ bool verify_ssl_fingerprint(sslclient_context32 *ssl_client, const char *fp, con
 
     if (!crt)
     {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("ERROR: could not fetch peer certificate"));
         log_d("could not fetch peer certificate");
         return false;
     }
@@ -483,6 +632,8 @@ bool verify_ssl_fingerprint(sslclient_context32 *ssl_client, const char *fp, con
     // Check if fingerprints match
     if (memcmp(fingerprint_local, fingerprint_remote, 32))
     {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("ERROR: fingerprint doesn't match"));
         log_d("fingerprint doesn't match");
         return false;
     }
@@ -542,7 +693,7 @@ bool verify_ssl_dn(sslclient_context32 *ssl_client, const char *domain_name)
     return false;
 }
 
-int starttlsHandshake(int s)
+int starttlsHandshake(sslclient_context32 *ssl_client, int port)
 {
 
     int ret = 0;
@@ -558,62 +709,115 @@ int starttlsHandshake(int s)
     struct timeval tv;
 
     FD_ZERO(&readset);
-    FD_SET(s, &readset);
+    FD_SET(ssl_client->socket, &readset);
     FD_ZERO(&writeset);
-    FD_SET(s, &writeset);
+    FD_SET(ssl_client->socket, &writeset);
 
     FD_ZERO(&errset);
-    FD_SET(s, &errset);
+    FD_SET(ssl_client->socket, &errset);
 
     tv.tv_sec = 1;
     tv.tv_usec = 0;
 
-    ret = lwip_select(s, &readset, &writeset, &errset, &tv);
+    ret = lwip_select(ssl_client->socket, &readset, &writeset, &errset, &tv);
     if (ret < 0)
+    {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("ERROR: waiting incoming data failed!"));
+
         goto starttls_exit;
+    }
 
-    ret = read(s, buf, bufLen);
-
-    if (ret < 0)
-        goto starttls_exit;
-
-    memset(hMsg, 0, msgLen);
-    strcpy_P(hMsg, FPSTR("EHLO DUDE\r\n"));
-
-    ret = lwip_write(s, hMsg, strlen(hMsg));
+    ret = read(ssl_client->socket, buf, bufLen);
 
     if (ret < 0)
+    {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("ERROR: reading incoming data failed!"));
         goto starttls_exit;
+    }
+    else
+    {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(buf);
+    }
 
-    ret = lwip_select(s, &readset, &writeset, &errset, &tv);
+    if (port == 587 || port == 25)
+    {
 
-    if (ret < 0)
-        goto starttls_exit;
+        memset(hMsg, 0, msgLen);
+        strcpy_P(hMsg, FPSTR("EHLO DUDE\r\n"));
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("INFO: send SMTP command extended HELO"));
+        ret = lwip_write(ssl_client->socket, hMsg, strlen(hMsg));
 
-    memset(buf, 0, bufLen);
-    ret = lwip_read(s, buf, bufLen);
+        if (ret < 0)
+        {
+            if (ssl_client->_debugCallback)
+                ssl_client->_debugCallback(FPSTR("ERROR: send SMTP command failed!"));
+            goto starttls_exit;
+        }
 
-    if (ret < 0)
-        goto starttls_exit;
+        ret = lwip_select(ssl_client->socket, &readset, &writeset, &errset, &tv);
+
+        if (ret < 0)
+        {
+            if (ssl_client->_debugCallback)
+                ssl_client->_debugCallback(FPSTR("ERROR: waiting incoming data failed!"));
+            goto starttls_exit;
+        }
+
+        memset(buf, 0, bufLen);
+        ret = lwip_read(ssl_client->socket, buf, bufLen);
+
+        if (ret < 0)
+        {
+            if (ssl_client->_debugCallback)
+                ssl_client->_debugCallback(FPSTR("ERROR: reading incoming data failed!"));
+            goto starttls_exit;
+        }
+        else
+        {
+            if (ssl_client->_debugCallback)
+                ssl_client->_debugCallback(buf);
+        }
+    }
 
     memset(hMsg, 0, msgLen);
     strcpy_P(hMsg, FPSTR("STARTTLS\r\n"));
-
-    ret = lwip_write(s, hMsg, strlen(hMsg));
-
-    if (ret < 0)
-        goto starttls_exit;
-
-    ret = lwip_select(s, &readset, &writeset, &errset, &tv);
+    ssl_client->_debugCallback(FPSTR("INFO: send STARTTLS protocol command"));
+    ret = lwip_write(ssl_client->socket, hMsg, strlen(hMsg));
 
     if (ret < 0)
+    {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("ERROR: send STARTTLS protocol command failed!"));
         goto starttls_exit;
+    }
+
+    ret = lwip_select(ssl_client->socket, &readset, &writeset, &errset, &tv);
+
+    if (ret < 0)
+    {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("ERROR: waiting incoming data failed!"));
+        goto starttls_exit;
+    }
 
     memset(buf, 0, bufLen);
-    ret = lwip_read(s, buf, bufLen);
+    ret = lwip_read(ssl_client->socket, buf, bufLen);
 
     if (ret < 0)
+    {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(FPSTR("ERROR: reading incoming data failed!"));
         goto starttls_exit;
+    }
+    else
+    {
+        if (ssl_client->_debugCallback)
+            ssl_client->_debugCallback(buf);
+    }
 
     delete[] buf;
     delete[] hMsg;

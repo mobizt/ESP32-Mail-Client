@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.2.0
+ *Mail Client Arduino Library for ESP32, version 1.2.1
  * 
- * August 6, 2019
+ * August 7, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers.
  * 
@@ -437,10 +437,11 @@ protected:
   std::string base64_encode_string(const unsigned char *src, size_t len);
   void send_base64_encode_data(WiFiClient *tcp, const unsigned char *src, size_t len);
   void send_base64_encode_file(WiFiClient *tcp, File file);
-  int waitSMTPResponse(HTTPClientESP32Ex &http);
+  int waitSMTPResponse(HTTPClientESP32Ex &http, SMTPData &smtpData);
   bool waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapData, ReadStatus &cbData, uint8_t imapCommandType = 0, int maxChar = 0, int mailIndex = -1, int messageDataIndex = -1, std ::string part = "");
   void createDirs(std::string dirs);
   bool sdTest();
+  
 };
 
 class messageBodyData
@@ -529,6 +530,16 @@ public:
 
   */
   void setSTARTTLS(bool starttls);
+
+   /*
+    
+    Set debug print to serial
+
+     @param debug - bool flag to enable debug
+
+  */
+  void setDebug(bool debug);
+
   /*
 
     Set the mailbox folder to search or fetch.
@@ -1182,8 +1193,9 @@ public:
   friend ESP32_MailClient;
 
 private:
-  String
-  getMessage(uint16_t messageIndex, bool htmlFormat);
+  String getMessage(uint16_t messageIndex, bool htmlFormat);
+  
+
   size_t _totalMessage = 0;
   std::string _host = "";
   uint16_t _port = 993;
@@ -1215,6 +1227,7 @@ private:
   uint16_t _emailNumMax = 20;
   int _searchCount;
   bool _starttls = false;
+  bool _debug = false;
   readStatusCallback _readCallback = NULL;
 
   std::vector<std::string> _date = std::vector<std::string>();
@@ -1273,6 +1286,15 @@ public:
 
   */
   void setSTARTTLS(bool starttls);
+  
+   /*
+    
+    Set debug print to serial
+
+     @param debug - bool flag to enable debug
+
+  */
+  void setDebug(bool debug);
   /*
     
     Set Sender info
@@ -1673,6 +1695,7 @@ protected:
   string _message = "";
   bool _htmlFormat = false;
   bool _starttls = false;
+  bool _debug = false;
   sendStatusCallback _sendCallback = NULL;
 
   std::vector<std::string> _recipient = std::vector<std::string>();
@@ -1681,7 +1704,26 @@ protected:
   attachmentData _attach;
   SendStatus _cbData;
   std::vector<const char *> _rootCA = std::vector<const char *>();
+
 };
+
+ static void __attribute__((used)) ESP32MailDebug(const char* msg) {
+
+  Serial.print(FPSTR("[DEBUG] - "));
+  Serial.println(msg);
+
+}
+
+static void __attribute__((used)) ESP32MailDebugLine(const char *msg, bool newline)
+{
+  if (!newline)
+    Serial.print(FPSTR("[DEBUG] - "));
+
+  if (newline)
+    Serial.println(msg);
+    else
+      Serial.print(msg);
+}
 
 extern ESP32_MailClient MailClient;
 

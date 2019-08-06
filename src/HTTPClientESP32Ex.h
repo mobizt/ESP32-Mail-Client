@@ -2,7 +2,7 @@
  * Customized version of ESP32 HTTPClient Library. 
  * Allow custom header and payload with STARTTLS support
  * 
- * v 1.1.0
+ * v 1.1.1
  * 
  * The MIT License (MIT)
  * Copyright (c) 2019 K. Suwatchai (Mobizt)
@@ -88,10 +88,12 @@ class HTTPClientESP32Ex : public HTTPClient
     uint16_t tcpTimeout = HTTPCLIENT_DEFAULT_TCP_TIMEOUT;
     bool http_connect(void);
     bool http_connect(bool starttls);
+    void setDebugCallback(DebugMsgCallback cb);
 
   protected:
     TransportTraitsPtr http_transportTraits;
     std::unique_ptr<WiFiClient> _tcp;
+    DebugMsgCallback _debugCallback = NULL;
 
     char _host[200];
     char _uri[200];

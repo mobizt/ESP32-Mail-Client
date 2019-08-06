@@ -1,5 +1,5 @@
 /*
- *Customized WiFiClientSecure.cpp to support STARTTLS protocol, version 1.0.0
+ *Customized WiFiClientSecure.cpp to support STARTTLS protocol, version 1.0.1
  * 
  * The MIT License (MIT)
  * Copyright (c) 2019 K. Suwatchai (Mobizt)
@@ -380,4 +380,9 @@ void WiFiClientSecureESP32::setHandshakeTimeout(unsigned long handshake_timeout)
 void WiFiClientSecureESP32::setSTARTTLS(bool starttls)
 {
     sslclient->starttls = starttls;
+}
+
+void WiFiClientSecureESP32::setDebugCB(DebugMsgCallback cb)
+{
+    sslclient->_debugCallback = std::move(cb);
 }

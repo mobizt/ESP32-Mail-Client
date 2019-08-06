@@ -1,6 +1,6 @@
 
 /*
- *Customized WiFiClientSecure.h to support STARTTLS protocol, version 1.0.0
+ *Customized WiFiClientSecure.h to support STARTTLS protocol, version 1.0.1
  * 
  * The MIT License (MIT)
  * Copyright (c) 2019 K. Suwatchai (Mobizt)
@@ -51,6 +51,8 @@
 #include <WiFi.h>
 #include "ssl_client32.h"
 
+typedef void (*DebugMsgCallback)(const char* msg);
+
 class WiFiClientSecureESP32 : public WiFiClient
 {
 protected:
@@ -64,6 +66,7 @@ protected:
     const char *_private_key;
     const char *_pskIdent; // identity for PSK cipher suites
     const char *_psKey; // key in hex for PSK cipher suites
+    DebugMsgCallback _debugCallback = NULL;
 
 public:
     WiFiClientSecureESP32 *next;
@@ -99,6 +102,7 @@ public:
     bool verify(const char* fingerprint, const char* domain_name);
     void setHandshakeTimeout(unsigned long handshake_timeout);
     void setSTARTTLS(bool starttls);
+    void setDebugCB(DebugMsgCallback cb);
 
     operator bool()
     {

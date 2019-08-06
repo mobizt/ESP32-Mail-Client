@@ -2,7 +2,7 @@
  * Customized version of ESP32 HTTPClient Library. 
  * Allow custom header and payload with STARTTLS support
  * 
- * v 1.1.0
+ * v 1.1.1
  * 
  * The MIT License (MIT)
  * Copyright (c) 2019 K. Suwatchai (Mobizt)
@@ -46,7 +46,7 @@ public:
     }
 
     virtual bool
-    verify(WiFiClient &client, const char *host, bool starttls)
+    verify(WiFiClient &client, const char *host, bool starttls, DebugMsgCallback cb)
     {
         return true;
     }
@@ -62,13 +62,14 @@ public:
         return std::unique_ptr<WiFiClient>(new WiFiClientSecureESP32());
     }
 
-    bool verify(WiFiClient &client, const char *host, bool starttls) override
+    bool verify(WiFiClient &client, const char *host, bool starttls, DebugMsgCallback cb) override
     {
         WiFiClientSecureESP32 &wcs = static_cast<WiFiClientSecureESP32 &>(client);
         wcs.setCACert(_cacert);
         wcs.setCertificate(_clicert);
         wcs.setPrivateKey(_clikey);
         wcs.setSTARTTLS(starttls);
+        wcs.setDebugCB(cb);
         return true;
     }
 
@@ -152,7 +153,7 @@ bool HTTPClientESP32Ex::http_connect(void)
 
     _tcp = http_transportTraits->create();
 
-    if (!http_transportTraits->verify(*_tcp, _host, false))
+    if (!http_transportTraits->verify(*_tcp, _host, false, _debugCallback))
     {
         _tcp->stop();
         return false;
@@ -179,7 +180,7 @@ bool HTTPClientESP32Ex::http_connect(bool starttls)
     _tcp = http_transportTraits->create();
    
 
-    if (!http_transportTraits->verify(*_tcp, _host, starttls))
+    if (!http_transportTraits->verify(*_tcp, _host, starttls, _debugCallback))
     {
         _tcp->stop();
         return false;
@@ -190,5 +191,9 @@ bool HTTPClientESP32Ex::http_connect(bool starttls)
         return false;
 
     return http_connected();
+}
+
+void HTTPClientESP32Ex::setDebugCallback(DebugMsgCallback cb){
+  _debugCallback = std::move(cb);
 }
 #endif

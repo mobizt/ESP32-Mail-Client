@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 v 1.2.0
+# Mail Client Arduino Library for ESP32 v 1.2.1
 
 This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download via SMTP and IMAP servers. 
 
@@ -106,6 +106,14 @@ smtpData.setLogin("smtp.gmail.com", 587, "YOUR_EMAIL_ACCOUNT@gmail.com", "YOUR_E
 //7. Setup IMAP server login credential in setup()
 
 imapData.setLogin("imap.gmail.com", 993, "YOUR_EMAIL_ACCOUNT@gmail.com", "YOUR_EMAIL_PASSWORD");
+
+
+//8. To debug for SMTP or IMAP data
+
+smtpData.setDebug(true);
+
+imapData.setDebug(true);
+
 
 
 
@@ -342,6 +350,20 @@ void setSTARTTLS(bool starttls);
 ```
 
 
+
+
+
+
+**Set debug print to serial.**
+
+param *`debug`* - bool flag to enable debug
+
+```C++
+void setDebug(bool debug);
+```
+
+
+ 
 
 
 
@@ -1177,6 +1199,19 @@ param *`starttls`* - bool flag that enables STARTTLS mode
 
 ```C++
 void setSTARTTLS(bool starttls);
+```
+
+
+
+
+
+
+**Set debug print to serial.**
+
+param *`debug`* - bool flag to enable debug
+
+```C++
+void setDebug(bool debug);
 ```
 
 

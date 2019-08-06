@@ -149,15 +149,15 @@ void readEmail()
   Serial.println();
   Serial.println("Read Email...");
 
-  imapData.setFechUID("10");
+  imapData.setFetchUID("10");
   imapData.setSearchCriteria("");
   MailClient.readMail(http, imapData);
 
-  imapData.setFechUID("11");
+  imapData.setFetchUID("11");
   imapData.setSearchCriteria("");
   MailClient.readMail(http, imapData);
 
-  imapData.setFechUID("12");
+  imapData.setFetchUID("12");
   imapData.setSearchCriteria("");
   MailClient.readMail(http, imapData);
 }
