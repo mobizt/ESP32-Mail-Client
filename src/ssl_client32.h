@@ -1,5 +1,5 @@
 /*
- *Customized ssl_client.h to support STARTTLS protocol, version 1.0.1
+ *Customized ssl_client.h to support STARTTLS protocol, version 1.0.2
  * 
  * The MIT License (MIT)
  * Copyright (c) 2019 K. Suwatchai (Mobizt)

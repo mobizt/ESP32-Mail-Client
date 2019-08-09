@@ -1,5 +1,5 @@
 /*
- *Customized ssl_client.cpp to support STARTTLS protocol, version 1.0.1
+ *Customized ssl_client.cpp to support STARTTLS protocol, version 1.0.2
  * 
  * The MIT License (MIT)
  * Copyright (c) 2019 K. Suwatchai (Mobizt)
@@ -498,7 +498,7 @@ int data_to_read(sslclient_context32 *ssl_client)
 
 int send_ssl_data(sslclient_context32 *ssl_client, const uint8_t *data, uint16_t len)
 {
-   
+
     log_v("Writing HTTP request..."); //for low level debug
     int ret = -1;
 
@@ -517,7 +517,7 @@ int send_ssl_data(sslclient_context32 *ssl_client, const uint8_t *data, uint16_t
 
 int get_ssl_receive(sslclient_context32 *ssl_client, uint8_t *data, int length)
 {
-   
+
     //log_d( "Reading HTTP response...");   //for low level debug
     int ret = -1;
 
@@ -785,7 +785,8 @@ int starttlsHandshake(sslclient_context32 *ssl_client, int port)
 
     memset(hMsg, 0, msgLen);
     strcpy_P(hMsg, FPSTR("STARTTLS\r\n"));
-    ssl_client->_debugCallback(FPSTR("INFO: send STARTTLS protocol command"));
+    if (ssl_client->_debugCallback)
+        ssl_client->_debugCallback(FPSTR("INFO: send STARTTLS protocol command"));
     ret = lwip_write(ssl_client->socket, hMsg, strlen(hMsg));
 
     if (ret < 0)
