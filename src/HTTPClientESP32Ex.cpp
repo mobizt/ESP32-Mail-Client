@@ -90,11 +90,10 @@ HTTPClientESP32Ex::~HTTPClientESP32Ex()
 bool HTTPClientESP32Ex::http_begin(const char *host, uint16_t port, const char *uri, const char *CAcert)
 {
     http_transportTraits.reset(nullptr);
-    memset(_host, 0, sizeof _host);
-    strcpy(_host, host);
+
+    _host = host;
     _port = port;
-    memset(_uri, 0, sizeof _uri);
-    strcpy(_uri, uri);
+    _uri = uri;
     http_transportTraits = TransportTraitsPtr(new TLSTraits(CAcert));
     return true;
 }
@@ -153,13 +152,13 @@ bool HTTPClientESP32Ex::http_connect(void)
 
     _tcp = http_transportTraits->create();
 
-    if (!http_transportTraits->verify(*_tcp, _host, false, _debugCallback))
+    if (!http_transportTraits->verify(*_tcp, _host.c_str(), false, _debugCallback))
     {
         _tcp->stop();
         return false;
     }
 
-    if (!_tcp->connect(_host, _port))
+    if (!_tcp->connect(_host.c_str(), _port))
         return false;
 
     return http_connected();
@@ -178,22 +177,21 @@ bool HTTPClientESP32Ex::http_connect(bool starttls)
         return false;
 
     _tcp = http_transportTraits->create();
-   
 
-    if (!http_transportTraits->verify(*_tcp, _host, starttls, _debugCallback))
+    if (!http_transportTraits->verify(*_tcp, _host.c_str(), starttls, _debugCallback))
     {
         _tcp->stop();
         return false;
     }
 
-
-    if (!_tcp->connect(_host, _port))
+    if (!_tcp->connect(_host.c_str(), _port))
         return false;
 
     return http_connected();
 }
 
-void HTTPClientESP32Ex::setDebugCallback(DebugMsgCallback cb){
-  _debugCallback = std::move(cb);
+void HTTPClientESP32Ex::setDebugCallback(DebugMsgCallback cb)
+{
+    _debugCallback = std::move(cb);
 }
 #endif
