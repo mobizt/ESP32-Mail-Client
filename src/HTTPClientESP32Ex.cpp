@@ -2,7 +2,7 @@
  * Customized version of ESP32 HTTPClient Library. 
  * Allow custom header and payload with STARTTLS support
  * 
- * v 1.1.2
+ * v 1.1.3
  * 
  * The MIT License (MIT)
  * Copyright (c) 2019 K. Suwatchai (Mobizt)
@@ -114,8 +114,6 @@ bool HTTPClientESP32Ex::http_sendHeader(const char *header)
 
 int HTTPClientESP32Ex::http_sendRequest(const char *header, const char *payload)
 {
-    Serial.print(header);
-    Serial.print(payload);
     size_t size = strlen(payload);
     if (strlen(header) > 0)
     {
