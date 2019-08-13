@@ -36,6 +36,8 @@ This following devices were tested and work well.
 
 * Support Email message fetch and search via IMAP command as in RFC 3501 (depending on IMAP server implementation).
 
+* Support Ethernet 
+
 
 
 
