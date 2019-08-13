@@ -143,7 +143,7 @@ To set sender, use `smtpData.addRecipient` e.g. `smtpData.addRecipient("SOME_REC
 To add attachment, use `smtpData.addAttachData` e.g. `smtpData.addAttachData("test.png", "image/png", (uint8_t *)imageData, sizeof imageData);`.
 
 
-When completed all required message data, sending Email `MailClient.sendMail(net, smtpData)`.
+When completed all required message data, sending Email `MailClient.sendMail(smtpData)`.
 
 
 
@@ -159,7 +159,7 @@ From search criteria, UID of message will be available to fetch or read.
 
 Whit search, body message and attachment can be ignore to reduce the network data usage.
 
-Begin receive Email `MailClient.readMail(net, imapData)`.
+Begin receive Email `MailClient.readMail(imapData)`.
 
 From above settings, you will get the following header information
 
