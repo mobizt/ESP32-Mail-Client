@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.2.3
+ *Mail Client Arduino Library for ESP32, version 2.0.0
  * 
- * August 12, 2019
+ * August 13, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -58,7 +58,7 @@ struct ESP32_MailClient::IMAP_HEADER_TYPE
   static const uint8_t ACCEPT_LANG = 8;
 };
 
-bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
+bool ESP32_MailClient::readMail(IMAPData &imapData)
 {
 
   std::string buf;
@@ -78,15 +78,15 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
   char *_val = new char[bufSize];
   char *_part = new char[bufSize];
 
-  WiFiClient *client;
 
   unsigned long dataTime = 0;
 
   int count = 0;
 
-  http.setDebugCallback(NULL);
+ imapData._net ->setDebugCallback(NULL);
 
-   if(imapData._debug) {
+  if (imapData._debug)
+  {
     ESP32MailDebug(FPSTR("INFO: connecting to IMAP server..."));
     ESP32MailDebug(imapData._host.c_str());
     ESP32MailDebug(String(imapData._port).c_str());
@@ -135,20 +135,19 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
   }
 
   if (imapData._debug)
-    http.setDebugCallback(ESP32MailDebug);
+   imapData._net->setDebugCallback(ESP32MailDebug);
 
   if (imapData._rootCA.size() > 0)
-    http.http_begin(imapData._host.c_str(), imapData._port, ESP32_MAIL_STR_202, (const char *)imapData._rootCA.front());
+   imapData._net->begin(imapData._host.c_str(), imapData._port, ESP32_MAIL_STR_202, (const char *)imapData._rootCA.front());
   else
-    http.http_begin(imapData._host.c_str(), imapData._port, ESP32_MAIL_STR_202, (const char *)NULL);
+   imapData._net->begin(imapData._host.c_str(), imapData._port, ESP32_MAIL_STR_202, (const char *)NULL);
 
-  
-  while (!http.http_connected() && count < 10)
+  while (!imapData._net->connected() && count < 10)
   {
 
     count++;
 
-    if (!http.http_connect(starttls))
+    if (!imapData._net->connect(starttls))
     {
 
       _imapStatus = IMAP_STATUS_SERVER_CONNECT_FAILED;
@@ -162,8 +161,8 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
       }
       if (imapData._debug)
       {
-        ESP32MailDebugLine(FPSTR("ERROR: "),false);
-        ESP32MailDebugLine(imapErrorReasonStr().c_str(),true);
+        ESP32MailDebugLine(FPSTR("ERROR: "), false);
+        ESP32MailDebugLine(imapErrorReasonStr().c_str(), true);
       }
     }
     else
@@ -172,16 +171,13 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     }
   }
 
-  if (!http.http_connect(starttls))
+  if (!imapData._net->connect(starttls))
   {
     goto out;
   }
 
-
-
   connected = true;
-  
-  client = http.http_getStreamPtr();
+
 
   if (imapData._readCallback)
   {
@@ -197,12 +193,12 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
   //Don't expect handshake from some servers
   dataTime = millis();
 
-  while (client->connected() && !client->available() && millis() - 500 < dataTime)
+  while (imapData._net->connected() && !imapData._net->getStreamPtr()->available() && millis() - 500 < dataTime)
     delay(1);
 
-  if (client->connected() && client->available())
-    while (client->available())
-      client->read();
+  if (imapData._net->connected() && imapData._net->getStreamPtr()->available())
+    while (imapData._net->getStreamPtr()->available())
+      imapData._net->getStreamPtr()->read();
 
   imapData.clearMessageData();
 
@@ -217,12 +213,12 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
   if (imapData._debug)
     ESP32MailDebug(FPSTR("INFO: send imap command LOGIN"));
 
-  client->print(ESP32_MAIL_STR_130);
-  client->print(imapData._loginEmail.c_str());
-  client->print(ESP32_MAIL_STR_131);
-  client->println(imapData._loginPassword.c_str());
+  imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_130);
+  imapData._net->getStreamPtr()->print(imapData._loginEmail.c_str());
+  imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_131);
+  imapData._net->getStreamPtr()->println(imapData._loginPassword.c_str());
 
-  if (!waitIMAPResponse(http, imapData, imapData._cbData, IMAP_COMMAND_TYPE::LOGIN))
+  if (!waitIMAPResponse(imapData, IMAP_COMMAND_TYPE::LOGIN))
   {
     _imapStatus = IMAP_STATUS_LOGIN_FAILED;
     if (imapData._readCallback)
@@ -258,8 +254,8 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     if (imapData._debug)
       ESP32MailDebug(FPSTR("INFO: send imap command LIST"));
 
-    client->println(ESP32_MAIL_STR_133);
-    if (!waitIMAPResponse(http, imapData, imapData._cbData, IMAP_COMMAND_TYPE::LIST))
+    imapData._net->getStreamPtr()->println(ESP32_MAIL_STR_133);
+    if (!waitIMAPResponse(imapData, IMAP_COMMAND_TYPE::LIST))
     {
       _imapStatus = IMAP_STATUS_BAD_COMMAND;
       if (imapData._readCallback)
@@ -284,8 +280,6 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
       imapData._cbData._success = false;
       imapData._readCallback(imapData._cbData);
 
-    
-
       for (size_t i = 0; i < imapData._folders.size(); i++)
       {
         imapData._cbData._info = imapData._folders[i];
@@ -304,10 +298,10 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
   if (imapData._debug)
     ESP32MailDebug(FPSTR("INFO: send imap command EXAMINE"));
 
-  client->print(ESP32_MAIL_STR_135);
-  client->print(imapData._currentFolder.c_str());
-  client->println(ESP32_MAIL_STR_136);
-  if (!waitIMAPResponse(http, imapData, imapData._cbData, IMAP_COMMAND_TYPE::EXAMINE))
+  imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_135);
+  imapData._net->getStreamPtr()->print(imapData._currentFolder.c_str());
+  imapData._net->getStreamPtr()->println(ESP32_MAIL_STR_136);
+  if (!waitIMAPResponse(imapData, IMAP_COMMAND_TYPE::EXAMINE))
   {
     _imapStatus = IMAP_STATUS_BAD_COMMAND;
     if (imapData._readCallback)
@@ -424,11 +418,11 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
         command += buf;
       }
 
-      client->println(command.c_str());
+      imapData._net->getStreamPtr()->println(command.c_str());
 
       std::string().swap(command);
 
-      if (!waitIMAPResponse(http, imapData, imapData._cbData, IMAP_COMMAND_TYPE::SEARCH, 1))
+      if (!waitIMAPResponse(imapData, IMAP_COMMAND_TYPE::SEARCH, 1))
       {
         _imapStatus = IMAP_STATUS_BAD_COMMAND;
         if (imapData._readCallback)
@@ -565,14 +559,14 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
     std::vector<messageBodyData>().swap(d);
 
     if (imapData._uidSearch || imapData._fetchUID.length() > 0)
-      client->print(ESP32_MAIL_STR_142);
+      imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_142);
     else
-      client->print(ESP32_MAIL_STR_143);
+      imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_143);
 
-    client->print(imapData._msgNum[i]);
-    client->println(ESP32_MAIL_STR_144);
+    imapData._net->getStreamPtr()->print(imapData._msgNum[i]);
+    imapData._net->getStreamPtr()->println(ESP32_MAIL_STR_144);
 
-    if (!waitIMAPResponse(http, imapData, imapData._cbData, IMAP_COMMAND_TYPE::FETCH_BODY_HEADER, 0, mailIndex))
+    if (!waitIMAPResponse(imapData, IMAP_COMMAND_TYPE::FETCH_BODY_HEADER, 0, mailIndex))
     {
       if (imapData._headerOnly)
         _imapStatus = IMAP_STATUS_IMAP_RESPONSE_FAILED;
@@ -607,20 +601,20 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
       {
 
         if (imapData._uidSearch || imapData._fetchUID.length() > 0)
-          client->print(ESP32_MAIL_STR_142);
+          imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_142);
         else
-          client->print(ESP32_MAIL_STR_143);
+          imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_143);
 
-        client->print(imapData._msgNum[i]);
-        client->print(ESP32_MAIL_STR_147);
-        client->print(partID);
-        client->println(ESP32_MAIL_STR_148);
+        imapData._net->getStreamPtr()->print(imapData._msgNum[i]);
+        imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_147);
+        imapData._net->getStreamPtr()->print(partID);
+        imapData._net->getStreamPtr()->println(ESP32_MAIL_STR_148);
 
         memset(_part, 0, bufSize);
         memset(_val, 0, bufSize);
         itoa(partID, _val, 10);
         strcpy(_part, _val);
-        res = waitIMAPResponse(http, imapData, imapData._cbData, IMAP_COMMAND_TYPE::FETCH_BODY_MIME, 0, mailIndex, messageDataIndex, _part);
+        res = waitIMAPResponse(imapData, IMAP_COMMAND_TYPE::FETCH_BODY_MIME, 0, mailIndex, messageDataIndex, _part);
         if (res)
         {
 
@@ -641,16 +635,16 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
             {
 
               if (imapData._uidSearch || imapData._fetchUID.length() > 0)
-                client->print(ESP32_MAIL_STR_142);
+                imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_142);
               else
-                client->print(ESP32_MAIL_STR_143);
+                imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_143);
 
-              client->print(imapData._msgNum[i]);
-              client->print(ESP32_MAIL_STR_147);
-              client->print(partID);
-              client->print(".");
-              client->print(_partID);
-              client->println(ESP32_MAIL_STR_148);
+              imapData._net->getStreamPtr()->print(imapData._msgNum[i]);
+              imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_147);
+              imapData._net->getStreamPtr()->print(partID);
+              imapData._net->getStreamPtr()->print(".");
+              imapData._net->getStreamPtr()->print(_partID);
+              imapData._net->getStreamPtr()->println(ESP32_MAIL_STR_148);
 
               memset(_part, 0, bufSize);
               memset(_val, 0, bufSize);
@@ -660,7 +654,7 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
               memset(_val, 0, bufSize);
               itoa(_partID, _val, 10);
               strcat(_part, _val);
-              _res = waitIMAPResponse(http, imapData, imapData._cbData, IMAP_COMMAND_TYPE::FETCH_BODY_MIME, 0, mailIndex, messageDataIndex, _part);
+              _res = waitIMAPResponse(imapData, IMAP_COMMAND_TYPE::FETCH_BODY_MIME, 0, mailIndex, messageDataIndex, _part);
 
               if (_res)
               {
@@ -748,15 +742,15 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
               continue;
 
             if (imapData._uidSearch || imapData._fetchUID.length() > 0)
-              client->print(ESP32_MAIL_STR_142);
+              imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_142);
             else
-              client->print(ESP32_MAIL_STR_143);
+              imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_143);
 
-            client->print(imapData._msgNum[i]);
-            client->print(ESP32_MAIL_STR_147);
-            client->print(imapData._messageDataInfo[mailIndex][j]._part.c_str());
-            client->println(ESP32_MAIL_STR_156);
-            if (!waitIMAPResponse(http, imapData, imapData._cbData, IMAP_COMMAND_TYPE::FETCH_BODY_TEXT, imapData._message_buffer_size, mailIndex, j))
+            imapData._net->getStreamPtr()->print(imapData._msgNum[i]);
+            imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_147);
+            imapData._net->getStreamPtr()->print(imapData._messageDataInfo[mailIndex][j]._part.c_str());
+            imapData._net->getStreamPtr()->println(ESP32_MAIL_STR_156);
+            if (!waitIMAPResponse(imapData, IMAP_COMMAND_TYPE::FETCH_BODY_TEXT, imapData._message_buffer_size, mailIndex, j))
             {
               _imapStatus = IMAP_STATUS_IMAP_RESPONSE_FAILED;
               if (imapData._readCallback)
@@ -789,15 +783,15 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
                       imapData._downloadedByte[mailIndex] += imapData._messageDataInfo[mailIndex][j + 1]._size;
 
                   if (imapData._uidSearch || imapData._fetchUID.length() > 0)
-                    client->print(ESP32_MAIL_STR_142);
+                    imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_142);
                   else
-                    client->print(ESP32_MAIL_STR_143);
+                    imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_143);
 
-                  client->print(imapData._msgNum[i]);
-                  client->print(ESP32_MAIL_STR_147);
-                  client->print(imapData._messageDataInfo[mailIndex][j]._part.c_str());
-                  client->println(ESP32_MAIL_STR_156);
-                  if (!waitIMAPResponse(http, imapData, imapData._cbData, IMAP_COMMAND_TYPE::FETCH_BODY_ATTACHMENT, imapData._message_buffer_size, mailIndex, j))
+                  imapData._net->getStreamPtr()->print(imapData._msgNum[i]);
+                  imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_147);
+                  imapData._net->getStreamPtr()->print(imapData._messageDataInfo[mailIndex][j]._part.c_str());
+                  imapData._net->getStreamPtr()->println(ESP32_MAIL_STR_156);
+                  if (!waitIMAPResponse(imapData, IMAP_COMMAND_TYPE::FETCH_BODY_ATTACHMENT, imapData._message_buffer_size, mailIndex, j))
                   {
                     _imapStatus = IMAP_STATUS_IMAP_RESPONSE_FAILED;
                     if (imapData._readCallback)
@@ -866,13 +860,13 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
   if (imapData._debug)
     ESP32MailDebug(FPSTR("INFO: send imap command LOGOUT"));
 
-  if (http.http_connected())
-    while (client->available())
-      client->read();
+  if (imapData._net->connected())
+    while (imapData._net->getStreamPtr()->available())
+      imapData._net->getStreamPtr()->read();
 
-  client->println(ESP32_MAIL_STR_146);
+  imapData._net->getStreamPtr()->println(ESP32_MAIL_STR_146);
 
-  if (!waitIMAPResponse(http, imapData, imapData._cbData, 0))
+  if (!waitIMAPResponse(imapData, 0))
   {
     _imapStatus = IMAP_STATUS_BAD_COMMAND;
     if (imapData._readCallback)
@@ -901,17 +895,15 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
   if (imapData._debug)
     ESP32MailDebug(FPSTR("INFO: message fetch completed"));
 
-  if (http.http_connected())
+  if (imapData._net->connected())
   {
-    while (client->available())
-      client->read();
+    while (imapData._net->getStreamPtr()->available())
+      imapData._net->getStreamPtr()->read();
 
-    client->stop();
+    imapData._net->getStreamPtr()->stop();
   }
 
-  client->flush();
-
-  client->~WiFiClient();
+ 
 
   imapData._cbData.empty();
   delete[] _val;
@@ -923,15 +915,15 @@ bool ESP32_MailClient::readMail(HTTPClientESP32Ex &http, IMAPData &imapData)
 
 out:
 
-if(connected)
-{
-  if (http.http_connected())
+  if (connected)
   {
-    while (client->available())
-      client->read();
-    client->stop();
+    if (imapData._net->connected())
+    {
+      while (imapData._net->getStreamPtr()->available())
+        imapData._net->getStreamPtr()->read();
+      imapData._net->getStreamPtr()->stop();
+    }
   }
-}
 
   imapData._cbData.empty();
   delete[] _val;
@@ -994,9 +986,7 @@ bool ESP32_MailClient::sdTest()
   return true;
 }
 
-
-
-bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
+bool ESP32_MailClient::sendMail(SMTPData &smtpData)
 {
 
   _smtpStatus = 0;
@@ -1007,10 +997,9 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   bool connected = false;
   char *_val = new char[bufSize];
 
-  http.setDebugCallback(NULL);
+ smtpData._net->setDebugCallback(NULL);
 
-
-  WiFiClient *client;
+  
 
   if (smtpData._sendCallback)
   {
@@ -1019,7 +1008,8 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
     smtpData._sendCallback(smtpData._cbData);
   }
 
-  if(smtpData._debug) {
+  if (smtpData._debug)
+  {
     ESP32MailDebug(FPSTR("INFO: connecting to SMTP server..."));
     ESP32MailDebug(smtpData._host.c_str());
     ESP32MailDebug(String(smtpData._port).c_str());
@@ -1053,23 +1043,23 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
       smtpData._cbData._success = false;
       smtpData._sendCallback(smtpData._cbData);
     }
-    if(smtpData._debug)
+    if (smtpData._debug)
       ESP32MailDebug(FPSTR("ERROR: could not connect to internet"));
     goto failed;
   }
 
-   if(smtpData._debug) http.setDebugCallback(ESP32MailDebug);
+  if (smtpData._debug)
+   smtpData._net->setDebugCallback(ESP32MailDebug);
 
-   if (smtpData._rootCA.size() > 0)
-    http.http_begin(smtpData._host.c_str(), smtpData._port, ESP32_MAIL_STR_202, (const char *)smtpData._rootCA.front());
+  if (smtpData._rootCA.size() > 0)
+   smtpData._net->begin(smtpData._host.c_str(), smtpData._port, ESP32_MAIL_STR_202, (const char *)smtpData._rootCA.front());
   else
-    http.http_begin(smtpData._host.c_str(), smtpData._port, ESP32_MAIL_STR_202, (const char *)NULL);
+   smtpData._net->begin(smtpData._host.c_str(), smtpData._port, ESP32_MAIL_STR_202, (const char *)NULL);
 
   if (smtpData._port == 587)
     starttls = true;
 
-
-  if (!http.http_connect(starttls))
+  if (!smtpData._net->connect(starttls))
   {
     _smtpStatus = SMTP_STATUS_SERVER_CONNECT_FAILED;
     if (smtpData._sendCallback)
@@ -1079,7 +1069,8 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
       smtpData._sendCallback(smtpData._cbData);
     }
 
-    if (smtpData._debug){
+    if (smtpData._debug)
+    {
       ESP32MailDebugLine(FPSTR("ERROR: "), false);
       ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
     }
@@ -1089,53 +1080,22 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
   if (smtpData._debug)
     ESP32MailDebug(FPSTR("INFO: smtp server connected"));
 
-    connected = true;
+  connected = true;
 
-    client = http.http_getStreamPtr();
 
-    if (!starttls)
-    {
-
-      if (smtpData._sendCallback)
-      {
-        smtpData._cbData._info = ESP32_MAIL_STR_121;
-        smtpData._cbData._success = false;
-        smtpData._sendCallback(smtpData._cbData);
-      }
-
-      if (waitSMTPResponse(http, smtpData) != 220)
-      {
-        _smtpStatus = SMTP_STATUS_SMTP_RESPONSE_FAILED;
-        if (smtpData._sendCallback)
-        {
-          smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
-          smtpData._cbData._success = false;
-          smtpData._sendCallback(smtpData._cbData);
-        }
-        if (smtpData._debug)
-        {
-          ESP32MailDebugLine(FPSTR("ERROR: "), false);
-          ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
-        }
-        goto failed;
-      }
-    }
+  if (!starttls)
+  {
 
     if (smtpData._sendCallback)
     {
-      smtpData._cbData._info = ESP32_MAIL_STR_122;
+      smtpData._cbData._info = ESP32_MAIL_STR_121;
       smtpData._cbData._success = false;
       smtpData._sendCallback(smtpData._cbData);
     }
 
-    if (smtpData._debug)
-      ESP32MailDebug(FPSTR("INFO: send smtp HELO command"));
-
-    client->println(ESP32_MAIL_STR_5);
-
-    if (waitSMTPResponse(http, smtpData) != 250)
+    if (waitSMTPResponse(smtpData) != 220)
     {
-      _smtpStatus = SMTP_STATUS_IDENTIFICATION_FAILED;
+      _smtpStatus = SMTP_STATUS_SMTP_RESPONSE_FAILED;
       if (smtpData._sendCallback)
       {
         smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
@@ -1149,471 +1109,492 @@ bool ESP32_MailClient::sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData)
       }
       goto failed;
     }
+  }
 
+  if (smtpData._sendCallback)
+  {
+    smtpData._cbData._info = ESP32_MAIL_STR_122;
+    smtpData._cbData._success = false;
+    smtpData._sendCallback(smtpData._cbData);
+  }
+
+  if (smtpData._debug)
+    ESP32MailDebug(FPSTR("INFO: send smtp HELO command"));
+
+ smtpData._net->getStreamPtr()->println(ESP32_MAIL_STR_5);
+
+  if (waitSMTPResponse(smtpData) != 250)
+  {
+    _smtpStatus = SMTP_STATUS_IDENTIFICATION_FAILED;
     if (smtpData._sendCallback)
     {
-      smtpData._cbData._info = ESP32_MAIL_STR_123;
-      smtpData._cbData._success = false;
-      smtpData._sendCallback(smtpData._cbData);
-    }
-
-    if (smtpData._debug)
-      ESP32MailDebug(FPSTR("INFO: send smtp AUTH LOGIN command"));
-
-    client->println(ESP32_MAIL_STR_4);
-
-    if (waitSMTPResponse(http, smtpData) != 334)
-    {
-      _smtpStatus = SMTP_STATUS_AUTHEN_FAILED;
-      if (smtpData._sendCallback)
-      {
-        smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
-        smtpData._cbData._success = false;
-        smtpData._sendCallback(smtpData._cbData);
-      }
-      if (smtpData._debug)
-      {
-        ESP32MailDebugLine(FPSTR("ERROR: "), false);
-        ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
-      }
-      goto failed;
-    }
-
-    if (smtpData._sendCallback)
-    {
-      smtpData._cbData._info = ESP32_MAIL_STR_124;
+      smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
       smtpData._cbData._success = false;
       smtpData._sendCallback(smtpData._cbData);
     }
     if (smtpData._debug)
-      ESP32MailDebug(FPSTR("INFO: log in with username and password"));
-
-    client->println(base64_encode_string((const unsigned char *)smtpData._loginEmail.c_str(), smtpData._loginEmail.length()).c_str());
-
-    if (waitSMTPResponse(http, smtpData) != 334)
     {
-      _smtpStatus = SMTP_STATUS_USER_LOGIN_FAILED;
-      if (smtpData._sendCallback)
-      {
-        smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
-        smtpData._cbData._success = false;
-        smtpData._sendCallback(smtpData._cbData);
-      }
-      if (smtpData._debug)
-      {
-        ESP32MailDebugLine(FPSTR("ERROR: "), false);
-        ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
-      }
-      goto failed;
+      ESP32MailDebugLine(FPSTR("ERROR: "), false);
+      ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
     }
+    goto failed;
+  }
 
-    client->println(base64_encode_string((const unsigned char *)smtpData._loginPassword.c_str(), smtpData._loginPassword.length()).c_str());
+  if (smtpData._sendCallback)
+  {
+    smtpData._cbData._info = ESP32_MAIL_STR_123;
+    smtpData._cbData._success = false;
+    smtpData._sendCallback(smtpData._cbData);
+  }
 
-    if (waitSMTPResponse(http, smtpData) != 235)
-    {
-      _smtpStatus = SMTP_STATUS_PASSWORD_LOGIN_FAILED;
-      if (smtpData._sendCallback)
-      {
-        smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
-        smtpData._cbData._success = false;
-        smtpData._sendCallback(smtpData._cbData);
-      }
-      if (smtpData._debug)
-      {
-        ESP32MailDebugLine(FPSTR("ERROR: "), false);
-        ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
-      }
-      goto failed;
-    }
+  if (smtpData._debug)
+    ESP32MailDebug(FPSTR("INFO: send smtp AUTH LOGIN command"));
 
+ smtpData._net->getStreamPtr()->println(ESP32_MAIL_STR_4);
+
+  if (waitSMTPResponse(smtpData) != 334)
+  {
+    _smtpStatus = SMTP_STATUS_AUTHEN_FAILED;
     if (smtpData._sendCallback)
     {
-      smtpData._cbData._info = ESP32_MAIL_STR_125;
+      smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
       smtpData._cbData._success = false;
       smtpData._sendCallback(smtpData._cbData);
     }
-
     if (smtpData._debug)
-      ESP32MailDebug(FPSTR("INFO: send email header"));
-
-    if (smtpData._priority > 0 && smtpData._priority <= 5)
     {
-      memset(_val, 0, bufSize);
-      itoa(smtpData._priority, _val, 10);
-
-      buf2 += ESP32_MAIL_STR_17;
-      buf2 += _val;
-      buf2 += ESP32_MAIL_STR_34;
-
-      if (smtpData._priority == 1)
-      {
-        buf2 += ESP32_MAIL_STR_18;
-        buf2 += ESP32_MAIL_STR_21;
-      }
-      else if (smtpData._priority == 3)
-      {
-        buf2 += ESP32_MAIL_STR_19;
-        buf2 += ESP32_MAIL_STR_22;
-      }
-      else if (smtpData._priority == 5)
-      {
-        buf2 += ESP32_MAIL_STR_20;
-        buf2 += ESP32_MAIL_STR_23;
-      }
+      ESP32MailDebugLine(FPSTR("ERROR: "), false);
+      ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
     }
+    goto failed;
+  }
 
-    buf2 += ESP32_MAIL_STR_10;
+  if (smtpData._sendCallback)
+  {
+    smtpData._cbData._info = ESP32_MAIL_STR_124;
+    smtpData._cbData._success = false;
+    smtpData._sendCallback(smtpData._cbData);
+  }
+  if (smtpData._debug)
+    ESP32MailDebug(FPSTR("INFO: log in with username and password"));
 
-    if (smtpData._fromName.length() > 0)
-      buf2 += smtpData._fromName;
+ smtpData._net->getStreamPtr()->println(base64_encode_string((const unsigned char *)smtpData._loginEmail.c_str(), smtpData._loginEmail.length()).c_str());
 
-    buf2 += ESP32_MAIL_STR_14;
-    buf2 += smtpData._senderEmail;
-    buf2 += ESP32_MAIL_STR_15;
+  if (waitSMTPResponse(smtpData) != 334)
+  {
+    _smtpStatus = SMTP_STATUS_USER_LOGIN_FAILED;
+    if (smtpData._sendCallback)
+    {
+      smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
+      smtpData._cbData._success = false;
+      smtpData._sendCallback(smtpData._cbData);
+    }
+    if (smtpData._debug)
+    {
+      ESP32MailDebugLine(FPSTR("ERROR: "), false);
+      ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
+    }
+    goto failed;
+  }
+
+ smtpData._net->getStreamPtr()->println(base64_encode_string((const unsigned char *)smtpData._loginPassword.c_str(), smtpData._loginPassword.length()).c_str());
+
+  if (waitSMTPResponse(smtpData) != 235)
+  {
+    _smtpStatus = SMTP_STATUS_PASSWORD_LOGIN_FAILED;
+    if (smtpData._sendCallback)
+    {
+      smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
+      smtpData._cbData._success = false;
+      smtpData._sendCallback(smtpData._cbData);
+    }
+    if (smtpData._debug)
+    {
+      ESP32MailDebugLine(FPSTR("ERROR: "), false);
+      ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
+    }
+    goto failed;
+  }
+
+  if (smtpData._sendCallback)
+  {
+    smtpData._cbData._info = ESP32_MAIL_STR_125;
+    smtpData._cbData._success = false;
+    smtpData._sendCallback(smtpData._cbData);
+  }
+
+  if (smtpData._debug)
+    ESP32MailDebug(FPSTR("INFO: send email header"));
+
+  if (smtpData._priority > 0 && smtpData._priority <= 5)
+  {
+    memset(_val, 0, bufSize);
+    itoa(smtpData._priority, _val, 10);
+
+    buf2 += ESP32_MAIL_STR_17;
+    buf2 += _val;
     buf2 += ESP32_MAIL_STR_34;
 
-    buf += ESP32_MAIL_STR_8;
-    buf += ESP32_MAIL_STR_14;
-    buf += smtpData._senderEmail;
-    buf += ESP32_MAIL_STR_15;
-    client->println(buf.c_str());
-    
-
-    if (waitSMTPResponse(http, smtpData) != 250)
+    if (smtpData._priority == 1)
     {
-      _smtpStatus = SMTP_STATUS_SEND_HEADER_SENDER_FAILED;
-      if (smtpData._sendCallback)
-      {
-        smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
-        smtpData._cbData._success = false;
-        smtpData._sendCallback(smtpData._cbData);
-      }
-      if (smtpData._debug)
-      {
-        ESP32MailDebugLine(FPSTR("ERROR: "), false);
-        ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
-      }
-      goto failed;
+      buf2 += ESP32_MAIL_STR_18;
+      buf2 += ESP32_MAIL_STR_21;
     }
-
-    for (uint8_t i = 0; i < smtpData._recipient.size(); i++)
+    else if (smtpData._priority == 3)
     {
-      if (i == 0)
-      {
-        buf2 += ESP32_MAIL_STR_11;
-        buf2 += ESP32_MAIL_STR_14;
-        buf2 += smtpData._recipient[i];
-        buf2 += ESP32_MAIL_STR_15;
-      }
-      else
-      {
-        buf2 += ESP32_MAIL_STR_13;
-        buf2 += smtpData._recipient[i];
-        buf2 += ESP32_MAIL_STR_15;
-      }
-
-      if (i == smtpData._recipient.size() - 1)
-        buf2 += ESP32_MAIL_STR_34;
-
-      buf.clear();
-
-      buf += ESP32_MAIL_STR_9;
-      buf += ESP32_MAIL_STR_14;
-      buf += smtpData._recipient[i];
-      buf += ESP32_MAIL_STR_15;
-
-      client->println(buf.c_str());
-    
-
-      if (waitSMTPResponse(http, smtpData) != 250)
-      {
-        _smtpStatus = SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED;
-        if (smtpData._sendCallback)
-        {
-          smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
-          smtpData._cbData._success = false;
-          smtpData._sendCallback(smtpData._cbData);
-        }
-        if (smtpData._debug)
-        {
-          ESP32MailDebugLine(FPSTR("ERROR: "), false);
-          ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
-        }
-        goto failed;
-      }
+      buf2 += ESP32_MAIL_STR_19;
+      buf2 += ESP32_MAIL_STR_22;
     }
-
-    for (uint8_t i = 0; i < smtpData._cc.size(); i++)
+    else if (smtpData._priority == 5)
     {
-
-      if (i == 0)
-      {
-        buf2 += ESP32_MAIL_STR_12;
-        buf2 += ESP32_MAIL_STR_14;
-        buf2 += smtpData._cc[i];
-        buf2 += ESP32_MAIL_STR_15;
-      }
-      else
-      {
-        buf2 += ESP32_MAIL_STR_13;
-        buf2 += smtpData._cc[i];
-        buf2 += ESP32_MAIL_STR_15;
-      }
-
-      if (i == smtpData.ccCount() - 1)
-        buf2 += ESP32_MAIL_STR_34;
-
-      buf.clear();
-
-      buf += ESP32_MAIL_STR_9;
-      buf += ESP32_MAIL_STR_14;
-      buf += smtpData._cc[i];
-      buf += ESP32_MAIL_STR_15;
-      client->println(buf.c_str());
-      
-
-      if (waitSMTPResponse(http, smtpData) != 250)
-      {
-        _smtpStatus = SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED;
-        if (smtpData._sendCallback)
-        {
-          smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
-          smtpData._cbData._success = false;
-          smtpData._sendCallback(smtpData._cbData);
-        }
-        if (smtpData._debug)
-        {
-          ESP32MailDebugLine(FPSTR("ERROR: "), false);
-          ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
-        }
-        goto failed;
-      }
+      buf2 += ESP32_MAIL_STR_20;
+      buf2 += ESP32_MAIL_STR_23;
     }
+  }
 
-    for (uint8_t i = 0; i < smtpData._bcc.size(); i++)
-    {
-      buf.clear();
-      buf += ESP32_MAIL_STR_9;
-      buf += ESP32_MAIL_STR_14;
-      buf += smtpData._bcc[i];
-      buf += ESP32_MAIL_STR_15;
-      client->println(buf.c_str());
-      
+  buf2 += ESP32_MAIL_STR_10;
 
-      if (waitSMTPResponse(http, smtpData) != 250)
-      {
-        _smtpStatus = SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED;
-        if (smtpData._sendCallback)
-        {
-          smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
-          smtpData._cbData._success = false;
-          smtpData._sendCallback(smtpData._cbData);
-        }
-        if (smtpData._debug)
-        {
-          ESP32MailDebugLine(FPSTR("ERROR: "), false);
-          ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
-        }
-        goto failed;
-      }
-    }
+  if (smtpData._fromName.length() > 0)
+    buf2 += smtpData._fromName;
 
+  buf2 += ESP32_MAIL_STR_14;
+  buf2 += smtpData._senderEmail;
+  buf2 += ESP32_MAIL_STR_15;
+  buf2 += ESP32_MAIL_STR_34;
+
+  buf += ESP32_MAIL_STR_8;
+  buf += ESP32_MAIL_STR_14;
+  buf += smtpData._senderEmail;
+  buf += ESP32_MAIL_STR_15;
+ smtpData._net->getStreamPtr()->println(buf.c_str());
+
+  if (waitSMTPResponse(smtpData) != 250)
+  {
+    _smtpStatus = SMTP_STATUS_SEND_HEADER_SENDER_FAILED;
     if (smtpData._sendCallback)
     {
-      smtpData._cbData._info = ESP32_MAIL_STR_126;
+      smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
       smtpData._cbData._success = false;
       smtpData._sendCallback(smtpData._cbData);
     }
-
     if (smtpData._debug)
-      ESP32MailDebug(FPSTR("INFO: send email body"));
-
-    client->println(ESP32_MAIL_STR_16);
-
-    if (waitSMTPResponse(http, smtpData) != 354)
     {
-      _smtpStatus = SMTP_STATUS_SEND_BODY_FAILED;
-      if (smtpData._sendCallback)
-      {
-        smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
-        smtpData._cbData._success = false;
-        smtpData._sendCallback(smtpData._cbData);
-      }
-      if (smtpData._debug)
-      {
-        ESP32MailDebugLine(FPSTR("ERROR: "), false);
-        ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
-      }
-      goto failed;
+      ESP32MailDebugLine(FPSTR("ERROR: "), false);
+      ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
+    }
+    goto failed;
+  }
+
+  for (uint8_t i = 0; i < smtpData._recipient.size(); i++)
+  {
+    if (i == 0)
+    {
+      buf2 += ESP32_MAIL_STR_11;
+      buf2 += ESP32_MAIL_STR_14;
+      buf2 += smtpData._recipient[i];
+      buf2 += ESP32_MAIL_STR_15;
+    }
+    else
+    {
+      buf2 += ESP32_MAIL_STR_13;
+      buf2 += smtpData._recipient[i];
+      buf2 += ESP32_MAIL_STR_15;
     }
 
-    client->print(buf2.c_str());
-
-    client->print(ESP32_MAIL_STR_24);
-    client->println(smtpData._subject.c_str());
-    client->print(ESP32_MAIL_STR_3);
-    client->print(ESP32_MAIL_STR_1);
-    client->print(ESP32_MAIL_STR_2);
-    client->print(ESP32_MAIL_STR_35);
+    if (i == smtpData._recipient.size() - 1)
+      buf2 += ESP32_MAIL_STR_34;
 
     buf.clear();
 
-    set_message_header(buf, smtpData._message, smtpData._htmlFormat);
+    buf += ESP32_MAIL_STR_9;
+    buf += ESP32_MAIL_STR_14;
+    buf += smtpData._recipient[i];
+    buf += ESP32_MAIL_STR_15;
 
-    client->print(buf.c_str());
+   smtpData._net->getStreamPtr()->println(buf.c_str());
 
-    if (smtpData._attach._index > 0)
+    if (waitSMTPResponse(smtpData) != 250)
     {
-      smtpData._cbData._info = ESP32_MAIL_STR_127;
+      _smtpStatus = SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED;
+      if (smtpData._sendCallback)
+      {
+        smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
+        smtpData._cbData._success = false;
+        smtpData._sendCallback(smtpData._cbData);
+      }
+      if (smtpData._debug)
+      {
+        ESP32MailDebugLine(FPSTR("ERROR: "), false);
+        ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
+      }
+      goto failed;
+    }
+  }
+
+  for (uint8_t i = 0; i < smtpData._cc.size(); i++)
+  {
+
+    if (i == 0)
+    {
+      buf2 += ESP32_MAIL_STR_12;
+      buf2 += ESP32_MAIL_STR_14;
+      buf2 += smtpData._cc[i];
+      buf2 += ESP32_MAIL_STR_15;
+    }
+    else
+    {
+      buf2 += ESP32_MAIL_STR_13;
+      buf2 += smtpData._cc[i];
+      buf2 += ESP32_MAIL_STR_15;
+    }
+
+    if (i == smtpData.ccCount() - 1)
+      buf2 += ESP32_MAIL_STR_34;
+
+    buf.clear();
+
+    buf += ESP32_MAIL_STR_9;
+    buf += ESP32_MAIL_STR_14;
+    buf += smtpData._cc[i];
+    buf += ESP32_MAIL_STR_15;
+   smtpData._net->getStreamPtr()->println(buf.c_str());
+
+    if (waitSMTPResponse(smtpData) != 250)
+    {
+      _smtpStatus = SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED;
+      if (smtpData._sendCallback)
+      {
+        smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
+        smtpData._cbData._success = false;
+        smtpData._sendCallback(smtpData._cbData);
+      }
+      if (smtpData._debug)
+      {
+        ESP32MailDebugLine(FPSTR("ERROR: "), false);
+        ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
+      }
+      goto failed;
+    }
+  }
+
+  for (uint8_t i = 0; i < smtpData._bcc.size(); i++)
+  {
+    buf.clear();
+    buf += ESP32_MAIL_STR_9;
+    buf += ESP32_MAIL_STR_14;
+    buf += smtpData._bcc[i];
+    buf += ESP32_MAIL_STR_15;
+   smtpData._net->getStreamPtr()->println(buf.c_str());
+
+    if (waitSMTPResponse(smtpData) != 250)
+    {
+      _smtpStatus = SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED;
+      if (smtpData._sendCallback)
+      {
+        smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
+        smtpData._cbData._success = false;
+        smtpData._sendCallback(smtpData._cbData);
+      }
+      if (smtpData._debug)
+      {
+        ESP32MailDebugLine(FPSTR("ERROR: "), false);
+        ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
+      }
+      goto failed;
+    }
+  }
+
+  if (smtpData._sendCallback)
+  {
+    smtpData._cbData._info = ESP32_MAIL_STR_126;
+    smtpData._cbData._success = false;
+    smtpData._sendCallback(smtpData._cbData);
+  }
+
+  if (smtpData._debug)
+    ESP32MailDebug(FPSTR("INFO: send email body"));
+
+ smtpData._net->getStreamPtr()->println(ESP32_MAIL_STR_16);
+
+  if (waitSMTPResponse(smtpData) != 354)
+  {
+    _smtpStatus = SMTP_STATUS_SEND_BODY_FAILED;
+    if (smtpData._sendCallback)
+    {
+      smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
+      smtpData._cbData._success = false;
+      smtpData._sendCallback(smtpData._cbData);
+    }
+    if (smtpData._debug)
+    {
+      ESP32MailDebugLine(FPSTR("ERROR: "), false);
+      ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
+    }
+    goto failed;
+  }
+
+ smtpData._net->getStreamPtr()->print(buf2.c_str());
+
+ smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_24);
+ smtpData._net->getStreamPtr()->println(smtpData._subject.c_str());
+
+  if (smtpData._customMessageHeader.size() > 0)
+    for (uint8_t k = 0; k < smtpData._customMessageHeader.size(); k++)
+     smtpData._net->getStreamPtr()->println(smtpData._customMessageHeader[k].c_str());
+
+ smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_3);
+ smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_1);
+ smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_2);
+ smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_35);
+
+  buf.clear();
+
+  set_message_header(buf, smtpData._message, smtpData._htmlFormat);
+
+ smtpData._net->getStreamPtr()->print(buf.c_str());
+
+  if (smtpData._attach._index > 0)
+  {
+    smtpData._cbData._info = ESP32_MAIL_STR_127;
+    smtpData._cbData._success = false;
+    if (smtpData._sendCallback)
+      smtpData._sendCallback(smtpData._cbData);
+    if (smtpData._debug)
+      ESP32MailDebug(FPSTR("INFO: send attachment..."));
+  }
+
+  for (uint8_t i = 0; i < smtpData._attach._index; i++)
+  {
+    if (smtpData._attach._type[i] == 0)
+    {
+
+      smtpData._cbData._info = smtpData._attach._filename[i];
       smtpData._cbData._success = false;
       if (smtpData._sendCallback)
         smtpData._sendCallback(smtpData._cbData);
       if (smtpData._debug)
-        ESP32MailDebug(FPSTR("INFO: send attachment..."));
+        ESP32MailDebug(smtpData._attach._filename[i].c_str());
+
+      buf.clear();
+      set_attachment_header(i, buf, smtpData._attach);
+     smtpData._net->getStreamPtr()->print(buf.c_str());
+      send_base64_encode_data(smtpData._net->getStreamPtr(), smtpData._attach._buf[i].front(), smtpData._attach._size[i]);
+     smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_34);
     }
-
-    for (uint8_t i = 0; i < smtpData._attach._index; i++)
+    else
     {
-      if (smtpData._attach._type[i] == 0)
-      {
 
+      if (!_sdOk)
+      {
+        if (smtpData._storageType == MailClientStorageType::SD)
+          _sdOk = sdTest();
+        else if (smtpData._storageType == MailClientStorageType::SPIFFS)
+          _sdOk = SPIFFS.begin(true);
+      }
+
+      if (!_sdOk)
+        continue;
+
+      bool file_existed = false;
+      if (smtpData._storageType == MailClientStorageType::SD)
+        file_existed = SD.exists(smtpData._attach._filename[i].c_str());
+      else if (smtpData._storageType == MailClientStorageType::SPIFFS)
+        file_existed = SPIFFS.exists(smtpData._attach._filename[i].c_str());
+
+      if (file_existed)
+      {
         smtpData._cbData._info = smtpData._attach._filename[i];
         smtpData._cbData._success = false;
         if (smtpData._sendCallback)
           smtpData._sendCallback(smtpData._cbData);
+
         if (smtpData._debug)
           ESP32MailDebug(smtpData._attach._filename[i].c_str());
 
         buf.clear();
         set_attachment_header(i, buf, smtpData._attach);
-        client->print(buf.c_str());
-        send_base64_encode_data(client, smtpData._attach._buf[i].front(), smtpData._attach._size[i]);
-        client->print(ESP32_MAIL_STR_34);
-      }
-      else
-      {
+       smtpData._net->getStreamPtr()->print(buf.c_str());
 
-        if (!_sdOk)
-        {
-          if (smtpData._storageType == MailClientStorageType::SD)
-            _sdOk = sdTest();
-          else if (smtpData._storageType == MailClientStorageType::SPIFFS)
-            _sdOk = SPIFFS.begin(true);
-        }
-
-        if (!_sdOk)
-          continue;
-
-        bool file_existed = false;
+        File file;
         if (smtpData._storageType == MailClientStorageType::SD)
-          file_existed = SD.exists(smtpData._attach._filename[i].c_str());
+          file = SD.open(smtpData._attach._filename[i].c_str(), FILE_READ);
         else if (smtpData._storageType == MailClientStorageType::SPIFFS)
-          file_existed = SPIFFS.exists(smtpData._attach._filename[i].c_str());
+          file = SPIFFS.open(smtpData._attach._filename[i].c_str(), FILE_READ);
 
-        if (file_existed)
-        {
-          smtpData._cbData._info = smtpData._attach._filename[i];
-          smtpData._cbData._success = false;
-          if (smtpData._sendCallback)
-            smtpData._sendCallback(smtpData._cbData);
-
-          if (smtpData._debug)
-            ESP32MailDebug(smtpData._attach._filename[i].c_str());
-
-          buf.clear();
-          set_attachment_header(i, buf, smtpData._attach);
-          client->print(buf.c_str());
-
-          File file;
-          if (smtpData._storageType == MailClientStorageType::SD)
-            file = SD.open(smtpData._attach._filename[i].c_str(), FILE_READ);
-          else if (smtpData._storageType == MailClientStorageType::SPIFFS)
-            file = SPIFFS.open(smtpData._attach._filename[i].c_str(), FILE_READ);
-
-          send_base64_encode_file(client, file);
-          client->print(ESP32_MAIL_STR_34);
-        }
+        send_base64_encode_file(smtpData._net->getStreamPtr(), file);
+       smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_34);
       }
     }
+  }
 
-    if (smtpData._debug)
-      ESP32MailDebug(FPSTR("INFO: finalize..."));
+  if (smtpData._debug)
+    ESP32MailDebug(FPSTR("INFO: finalize..."));
 
-    client->print(ESP32_MAIL_STR_33);
-    client->print(ESP32_MAIL_STR_2);
-    client->print(ESP32_MAIL_STR_33);
-    client->print(ESP32_MAIL_STR_37);
+ smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_33);
+ smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_2);
+ smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_33);
+ smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_37);
 
+  if (smtpData._sendCallback)
+  {
+    smtpData._cbData._info = ESP32_MAIL_STR_128;
+    smtpData._cbData._success = false;
+    smtpData._sendCallback(smtpData._cbData);
+  }
+
+  if (waitSMTPResponse(smtpData) != 250)
+  {
+    _smtpStatus = SMTP_STATUS_SEND_BODY_FAILED;
     if (smtpData._sendCallback)
     {
-      smtpData._cbData._info = ESP32_MAIL_STR_128;
+      smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
       smtpData._cbData._success = false;
       smtpData._sendCallback(smtpData._cbData);
     }
-
-    if (waitSMTPResponse(http, smtpData) != 250)
-    {
-      _smtpStatus = SMTP_STATUS_SEND_BODY_FAILED;
-      if (smtpData._sendCallback)
-      {
-        smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
-        smtpData._cbData._success = false;
-        smtpData._sendCallback(smtpData._cbData);
-      }
-      if (smtpData._debug)
-      {
-        ESP32MailDebugLine(FPSTR("ERROR: "), false);
-        ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
-      }
-      goto failed;
-    }
-
-    if (smtpData._sendCallback)
-    {
-      smtpData._cbData._info = ESP32_MAIL_STR_129;
-      smtpData._cbData._success = true;
-      smtpData._sendCallback(smtpData._cbData);
-    }
-
     if (smtpData._debug)
-      ESP32MailDebug(FPSTR("INFO: email sent successfully"));
-
-    if (http.http_connected())
     {
-      client->stop();
+      ESP32MailDebugLine(FPSTR("ERROR: "), false);
+      ESP32MailDebugLine(smtpErrorReasonStr().c_str(), true);
     }
+    goto failed;
+  }
 
-    client->flush();
+  if (smtpData._sendCallback)
+  {
+    smtpData._cbData._info = ESP32_MAIL_STR_129;
+    smtpData._cbData._success = true;
+    smtpData._sendCallback(smtpData._cbData);
+  }
 
-    client->~WiFiClient();
+  if (smtpData._debug)
+    ESP32MailDebug(FPSTR("INFO: email sent successfully"));
 
-    smtpData._cbData.empty();
+  if (smtpData._net->connected())
+    smtpData._net->getStreamPtr()->stop();
+  
+  smtpData._cbData.empty();
 
-    std::string().swap(buf);
-    std::string().swap(buf2);
-    delete[] _val;
 
-    return true;
+  std::string().swap(buf);
+  std::string().swap(buf2);
+  delete[] _val;
 
-  failed:
+  return true;
 
-    if (connected)
-    {
-      if (http.http_connected())
-      {
-        client->stop();
-      }
+failed:
 
-      client->flush();
+  if (connected)
+  {
+    if (smtpData._net->connected())
+     smtpData._net->getStreamPtr()->stop();  
 
-      client->~WiFiClient();
-    }
+  }
 
-    smtpData._cbData.empty();
-    std::string().swap(buf);
-    std::string().swap(buf2);
-    delete[] _val;
-    return false;
+  smtpData._cbData.empty();
+  std::string().swap(buf);
+  std::string().swap(buf2);
+  delete[] _val;
+  return false;
 }
 
 String ESP32_MailClient::smtpErrorReason()
@@ -1792,7 +1773,7 @@ void ESP32_MailClient::set_attachment_header(uint8_t index, std::string &header,
   std::string().swap(filename);
 }
 
-int ESP32_MailClient::waitSMTPResponse(HTTPClientESP32Ex &http, SMTPData &smtpData)
+int ESP32_MailClient::waitSMTPResponse(SMTPData &smtpData)
 {
 
   long dataTime = millis();
@@ -1805,22 +1786,22 @@ int ESP32_MailClient::waitSMTPResponse(HTTPClientESP32Ex &http, SMTPData &smtpDa
 
   int resCode = -1000;
 
-  WiFiClient *client = http.http_getStreamPtr();
 
-  while (client->connected() && !client->available() && millis() - dataTime < http.tcpTimeout)
+  while (smtpData._net->getStreamPtr()->connected() && !smtpData._net->getStreamPtr()->available() && millis() - dataTime < smtpData._net->tcpTimeout)
     delay(1);
 
   dataTime = millis();
-  if (client->connected() && client->available())
+  if (smtpData._net->getStreamPtr()->connected() && smtpData._net->getStreamPtr()->available())
   {
-    while (client->available())
+    while (smtpData._net->getStreamPtr()->available())
     {
-      int r = client->read();
+      int r =smtpData._net->getStreamPtr()->read();
 
       if (r < 0)
         continue;
 
       c = (char)r;
+      Serial.print(c);
 
       lineBuf.append(1, c);
 
@@ -1842,7 +1823,7 @@ int ESP32_MailClient::waitSMTPResponse(HTTPClientESP32Ex &http, SMTPData &smtpDa
         lfCount++;
       }
 
-      if (millis() - dataTime > http.tcpTimeout + 30000 || completeResp)
+      if (millis() - dataTime > smtpData._net->tcpTimeout + 30000 || completeResp)
         break;
     }
   }
@@ -1851,7 +1832,7 @@ int ESP32_MailClient::waitSMTPResponse(HTTPClientESP32Ex &http, SMTPData &smtpDa
   return resCode;
 }
 
-bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapData, ReadStatus &cbData, uint8_t imapCommandType, int maxChar, int mailIndex, int messageDataIndex, std::string part)
+bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandType, int maxChar, int mailIndex, int messageDataIndex, std::string part)
 {
 
   long dataTime = millis();
@@ -1908,18 +1889,18 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
     std::vector<std::string>()
         .swap(imapData._folders);
 
-  WiFiClient *client = http.http_getStreamPtr();
+  
 
-  while (client->connected() && !client->available() && millis() - dataTime < http.tcpTimeout)
+  while (imapData._net->getStreamPtr()->connected() && !imapData._net->getStreamPtr()->available() && millis() - dataTime < imapData._net->tcpTimeout)
     delay(1);
 
   dataTime = millis();
-  if (client->connected() && client->available())
+  if (imapData._net->getStreamPtr()->connected() && imapData._net->getStreamPtr()->available())
   {
-    while (client->available() || !completeResp)
+    while (imapData._net->getStreamPtr()->available() || !completeResp)
     {
 
-      int r = client->read();
+      int r =imapData._net->getStreamPtr()->read();
 
       if (r < 0)
         continue;
@@ -2033,11 +2014,11 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
           }
         }
 
-        if (millis() - dataTime > http.tcpTimeout + (30 * 1000) || (payloadLength > 0 && charCount == payloadLength && completeResp))
+        if (millis() - dataTime > imapData._net->tcpTimeout + (30 * 1000) || (payloadLength > 0 && charCount == payloadLength && completeResp))
         {
 
           if (charCount < payloadLength || !completeResp)
-            clientFlush(client);
+            clientReadAll(imapData._net->getStreamPtr());
 
           break;
         }
@@ -2735,10 +2716,10 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
 
                       if (imapData._readCallback)
                       {
-                        cbData._info = dl;
-                        cbData._status = dl;
-                        cbData._success = false;
-                        imapData._readCallback(cbData);
+                        imapData._cbData._info = dl;
+                        imapData._cbData._status = dl;
+                        imapData._cbData._success = false;
+                        imapData._readCallback(imapData._cbData);
                       }
 
                       std::string().swap(dl);
@@ -2752,7 +2733,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
                 delete[] decoded;
               }
 
-              if (millis() - dataTime > http.tcpTimeout + 1000 * 60 * 5)
+              if (millis() - dataTime > imapData._net->tcpTimeout + 1000 * 60 * 5)
                 break;
             }
           }
@@ -2789,7 +2770,7 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
       }
     }
 
-    if (millis() - dataTime > http.tcpTimeout)
+    if (millis() - dataTime > imapData._net->tcpTimeout)
     {
 
       if (downloadReq)
@@ -2957,15 +2938,12 @@ bool ESP32_MailClient::waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapD
   return validResponse;
 }
 
-void ESP32_MailClient::clientFlush(WiFiClient *client)
+void ESP32_MailClient::clientReadAll(WiFiClient *client)
 {
   if (client)
   {
     if (client->available() > 0)
-    {
-      client->flush();
-      delay(50);
-    }
+      client->read(); 
   }
 }
 
@@ -3273,8 +3251,9 @@ IMAPData::IMAPData() {}
 IMAPData::~IMAPData()
 {
   empty();
+   _net.reset();
+  _net.release();
 }
-
 
 void IMAPData::setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword, const char *rootCA)
 {
@@ -3292,7 +3271,6 @@ void IMAPData::setLogin(const String &host, uint16_t port, const String &loginEm
   if (strlen(rootCA) > 0)
     _rootCA.push_back((char *)rootCA);
 }
-
 
 void IMAPData::setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword)
 {
@@ -3673,8 +3651,6 @@ String IMAPData::getMessage(uint16_t messageIndex, bool htmlFormat)
 
   return std::string().c_str();
 }
-
-
 
 String IMAPData::getHTMLMessgaeCharset(uint16_t messageIndex)
 {
@@ -4075,6 +4051,8 @@ SMTPData::SMTPData() {}
 SMTPData::~SMTPData()
 {
   empty();
+  _net.reset();
+  _net.release();
 }
 
 void SMTPData::setLogin(const String &host, uint16_t port, const String &loginEmail, const String &loginPassword, const char *rootCA)
@@ -4387,6 +4365,40 @@ uint8_t SMTPData::attachFileCount()
   return count;
 }
 
+void SMTPData::addCustomMessageHeader(const String &commmand)
+{
+  _customMessageHeader.insert(_customMessageHeader.end(), commmand.c_str());
+}
+
+void SMTPData::removeCustomMessageHeader(const String &commmand)
+{
+  for (uint8_t i = 0; i < _customMessageHeader.size(); i++)
+    if (_customMessageHeader[i].c_str() == commmand.c_str())
+      _customMessageHeader.erase(_customMessageHeader.begin() + i);
+}
+
+void SMTPData::removeCustomMessageHeader(uint8_t index)
+{
+  _customMessageHeader.erase(_customMessageHeader.begin() + index);
+}
+
+void SMTPData::clearCustomMessageHeader()
+{
+  std::vector<std::string>().swap(_customMessageHeader);
+}
+
+uint8_t SMTPData::CustomMessageHeaderCount()
+{
+  return _customMessageHeader.size();
+}
+
+String SMTPData::getCustomMessageHeader(uint8_t index)
+{
+  if (index >= _customMessageHeader.size())
+    return std::string().c_str();
+  return _customMessageHeader[index].c_str();
+}
+
 void SMTPData::empty()
 {
   std::string().swap(_host);
@@ -4397,6 +4409,7 @@ void SMTPData::empty()
   std::string().swap(_subject);
   std::string().swap(_message);
   clearRecipient();
+  clearCustomMessageHeader();
   clearCC();
   clearBCC();
   clearAttachment();
@@ -4406,7 +4419,6 @@ void SMTPData::setSendCallback(sendStatusCallback sendCallback)
 {
   _sendCallback = std::move(sendCallback);
 }
-
 
 ReadStatus::ReadStatus()
 {
@@ -4458,3 +4470,5 @@ void SendStatus::empty()
 }
 
 ESP32_MailClient MailClient = ESP32_MailClient();
+
+

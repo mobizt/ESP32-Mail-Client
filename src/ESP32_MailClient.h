@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 1.2.3
+ *Mail Client Arduino Library for ESP32, version 2.0.0
  * 
- * August 12, 2019
+ * August 13, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers.
  * 
@@ -41,7 +41,7 @@
 #include "FS.h"
 #include "SPIFFS.h"
 #include "RFC2047.h"
-#include "HTTPClientESP32Ex.h"
+#include "ESP32MailHTTPClient.h"
 
 #define FORMAT_SPIFFS_IF_FAILED true
 
@@ -310,6 +310,8 @@ static const char ESP32_MAIL_STR_222[] PROGMEM = "set recipient failed";
 static const char ESP32_MAIL_STR_223[] PROGMEM = " NEW";
 static const char ESP32_MAIL_STR_224[] PROGMEM = "ALL";
 
+
+
 __attribute__((used)) static bool compFunc(uint32_t i, uint32_t j)
 {
   return (i > j);
@@ -348,6 +350,8 @@ public:
 typedef void (*readStatusCallback)(ReadStatus);
 typedef void (*sendStatusCallback)(SendStatus);
 
+
+
 class ESP32_MailClient
 {
 
@@ -356,25 +360,23 @@ public:
      
     Sending Email through SMTP server
       
-    @param http - HTTPClientESP32 WiFi client.
-    @param smtpData - SMTP Data object to hold data and instances.
+    @param net - HTTPClientESP32 WiFi client.
 
     @return Boolean type status indicates the success of operation.
 
   */
-  bool sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData);
+  bool sendMail(SMTPData &smtpData);
 
   /*
   
     Reading Email through IMAP server.
   
-    @param http - HTTPClientESP32 WiFi client.
     @param imapData - IMAP Data object to hold data and instances.
 
     @return Boolean type status indicates the success of operation.
   
   */
-  bool readMail(HTTPClientESP32Ex &http, IMAPData &imapData);
+  bool readMail(IMAPData &imapData);
 
   /*
   
@@ -431,14 +433,14 @@ protected:
   std::string imapErrorReasonStr();
   void set_message_header(string &header, std::string &message, bool htmlFormat);
   void set_attachment_header(uint8_t index, std::string &header, attachmentData &attach);
-  void clientFlush(WiFiClient *tcp);
+  void clientReadAll(WiFiClient *client);
   double base64DecodeSize(std::string lastBase64String, int length);
   unsigned char *base64_decode_char(const unsigned char *src, size_t len, size_t *out_len);
   std::string base64_encode_string(const unsigned char *src, size_t len);
-  void send_base64_encode_data(WiFiClient *tcp, const unsigned char *src, size_t len);
-  void send_base64_encode_file(WiFiClient *tcp, File file);
-  int waitSMTPResponse(HTTPClientESP32Ex &http, SMTPData &smtpData);
-  bool waitIMAPResponse(HTTPClientESP32Ex &http, IMAPData &imapData, ReadStatus &cbData, uint8_t imapCommandType = 0, int maxChar = 0, int mailIndex = -1, int messageDataIndex = -1, std ::string part = "");
+  void send_base64_encode_data(WiFiClient *client, const unsigned char *src, size_t len);
+  void send_base64_encode_file(WiFiClient *client, File file);
+  int waitSMTPResponse(SMTPData &smtpData);
+  bool waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandType = 0, int maxChar = 0, int mailIndex = -1, int messageDataIndex = -1, std ::string part = "");
   void createDirs(std::string dirs);
   bool sdTest();
   
@@ -1254,6 +1256,9 @@ private:
   std::vector<std::string> _errorMsg = std::vector<std::string>();
   std::vector<bool> _error = std::vector<bool>();
   std::vector<const char *> _rootCA = std::vector<const char *>();
+  
+
+  std::unique_ptr<ESP32MailHTTPClient> _net = std::unique_ptr<ESP32MailHTTPClient>(new ESP32MailHTTPClient());
 
   ReadStatus _cbData;
 };
@@ -1664,6 +1669,67 @@ public:
 
   /*
 
+    Add one or more custom message header field.
+    
+    @param field - custom header String inform of FIELD: VALUE
+
+    This header field will add to message header.
+
+  
+  */
+  void addCustomMessageHeader(const String &field);
+
+  /*
+
+    Remove one custom message header field that previously added.
+    
+    @param field - custom custom message header field String to remove.
+
+  
+  */
+  void removeCustomMessageHeader(const String &field);
+
+  /*
+
+    Remove one custom message header field that previously added by its index.
+    
+    @param index - custom message header field index (number) to remove.
+
+  
+  */
+  void removeCustomMessageHeader(uint8_t index);
+
+  /*
+
+    Clear all ccustom message header field that previously added.
+  
+  */
+  void clearCustomMessageHeader();
+
+  /*
+
+    Get the number of custom message header field that previously added.
+    
+    @return Number of custom message header field.
+
+  */
+  uint8_t CustomMessageHeaderCount();
+
+  /*
+
+    Get custom message header field that previously added by index
+    
+    @param index - The custom message header field index to get.
+
+    @return The custom message header field string at the index.
+
+  */
+  String getCustomMessageHeader(uint8_t index);
+
+  
+
+  /*
+
     Clear all data from Email object to free memory.
 
   */
@@ -1699,11 +1765,13 @@ protected:
   sendStatusCallback _sendCallback = NULL;
 
   std::vector<std::string> _recipient = std::vector<std::string>();
+  std::vector<std::string> _customMessageHeader = std::vector<std::string>();
   std::vector<std::string> _cc = std::vector<std::string>();
   std::vector<std::string> _bcc = std::vector<std::string>();
   attachmentData _attach;
   SendStatus _cbData;
   std::vector<const char *> _rootCA = std::vector<const char *>();
+  std::unique_ptr<ESP32MailHTTPClient> _net = std::unique_ptr<ESP32MailHTTPClient>(new ESP32MailHTTPClient());
 
 };
 

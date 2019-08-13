@@ -29,8 +29,6 @@
 #define WIFI_SSID "YOUR_WIFI_SSID"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
-//WiFi or HTTP client for internet connection
-HTTPClientESP32Ex http;
 
 //The Email Sending data object contains config and data to send
 SMTPData smtpData;
@@ -140,6 +138,14 @@ void setup()
   smtpData.addAttachFile("/binary_file.dat");
   smtpData.addAttachFile("/text_file.txt");
 
+
+  //Add some custom header to message
+  //See https://tools.ietf.org/html/rfc822
+  //These header fields can be read from raw or source of message when it received)
+  smtpData.addCustomMessageHeader("Date: Sat, 10 Aug 2019 21:39:56 -0700 (PDT)");
+  //Be careful when set Message-ID, it should be unique, otherwise message will not store
+  //smtpData.addCustomMessageHeader("Message-ID: <abcde.fghij@gmail.com>");
+
   //Set the storage types to read the attach files (SD is default)
   //smtpData.setFileStorageType(MailClientStorageType::SPIFFS);
   smtpData.setFileStorageType(MailClientStorageType::SD);
@@ -149,7 +155,7 @@ void setup()
   smtpData.setSendCallback(sendCallback);
 
   //Start sending Email, can be set callback function to track the status
-  if (!MailClient.sendMail(http, smtpData))
+  if (!MailClient.sendMail(smtpData))
     Serial.println("Error sending Email, " + MailClient.smtpErrorReason());
 
   //Clear all data from Email object to free memory

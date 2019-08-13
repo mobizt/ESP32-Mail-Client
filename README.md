@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 v 1.2.3
+# Mail Client Arduino Library for ESP32 v 2.0.0
 
 This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download via SMTP and IMAP servers. 
 
@@ -38,21 +38,11 @@ This following devices were tested and work well.
 
 
 
-## Dependencies
-
-For library version less than 1.2.0, required HTTPClientESP32Ex library to be installed. https://github.com/mobizt/HTTPClientESP32Ex
-
 
 ## Prerequisites
 
-To send email via GMAIL for library version less than 1.2.0 which STARTTLS was not support, the less secure app option should be enabled. This option can be set from https://myaccount.google.com/lesssecureapps?pli=1
 
-
-
-To receive Email via Gmail incoming Email service, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
-
-
-For library version 1.2.0 and greater, STARTTLS was supported and can be enable automatically when port 587 for SMTP was used or can set manually thrugh smtpData.setSTARTTLS(true) and for IMAP through imapData.setSTARTTLS(true).
+For library version 1.2.0 and newer, STARTTLS was supported and can be enable automatically when port 587 for SMTP was used or can set manually thrugh smtpData.setSTARTTLS(true) and for IMAP through imapData.setSTARTTLS(true).
 
 
 
@@ -78,41 +68,52 @@ __Declaration and Initialization__
 
 ```C++
 
-//1. Download  HTTPClientESP32Ex library above and add to Arduino library
 
-//2. Include ESP32 Mail Client library (this library)
+//1. Include ESP32 Mail Client library (this library)
 
 #include "ESP32_MailClient.h"
 
-//3. Declare WiFi or HTTP client for internet connection in global scope.
 
-HTTPClientESP32Ex http;
-
-//4. For sending Email, declare Email Sending data object in global scope.
+//2. For sending Email, declare Email Sending data object in global scope.
 SMTPData smtpData;
 
 //Or
 
-//5. For receiving Email, declare Email receiving data object in global scope.
+//For receiving Email, declare Email receiving data object in global scope.
 IMAPData imapData;
 
 
-//6. Setup SMTP server login credential in setup()
+//3 Setup SMTP server login credential in setup()
 
 smtpData.setLogin("smtp.gmail.com", 587, "YOUR_EMAIL_ACCOUNT@gmail.com", "YOUR_EMAIL_PASSWORD");
 
 //Or
 
-//7. Setup IMAP server login credential in setup()
+//Setup IMAP server login credential in setup()
 
 imapData.setLogin("imap.gmail.com", 993, "YOUR_EMAIL_ACCOUNT@gmail.com", "YOUR_EMAIL_PASSWORD");
 
 
-//8. To debug for SMTP or IMAP data
+//4 For SMTP, set some custom message header (optional)
+smtpData.addCustomMessageHeader("Date: Sat, 10 Aug 2019 21:39:56 -0700 (PDT)");
+
+smtpData.addCustomMessageHeader("Message-ID: <10000.30000@gmail.com>");
+
+
+//5 To debug for SMTP
 
 smtpData.setDebug(true);
 
+//Or IMAP
 imapData.setDebug(true);
+
+
+//6. Send Email
+MailClient.sendMail(smtpData));
+
+//Or Receive Email
+
+MailClient.readdMail(imapData));
 
 
 
@@ -142,7 +143,7 @@ To set sender, use `smtpData.addRecipient` e.g. `smtpData.addRecipient("SOME_REC
 To add attachment, use `smtpData.addAttachData` e.g. `smtpData.addAttachData("test.png", "image/png", (uint8_t *)imageData, sizeof imageData);`.
 
 
-When completed all required message data, sending Email `MailClient.sendMail(http, smtpData)`.
+When completed all required message data, sending Email `MailClient.sendMail(net, smtpData)`.
 
 
 
@@ -158,7 +159,7 @@ From search criteria, UID of message will be available to fetch or read.
 
 Whit search, body message and attachment can be ignore to reduce the network data usage.
 
-Begin receive Email `MailClient.readMail(http, imapData)`.
+Begin receive Email `MailClient.readMail(net, imapData)`.
 
 From above settings, you will get the following header information
 
@@ -227,14 +228,12 @@ __Global functions__
 
 **Sending Email via SMTP server.**
 
-param *`http`* - HTTPClientESP32Ex WiFi client.
-
 param *`smtpData`* - SMTP Data object to hold data and instances.
 
 return - *`Boolean`* type status indicates the success of operation.
 
 ```C++
-bool sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData);
+bool sendMail(SMTPData &smtpData);
 ```
 
 
@@ -242,14 +241,12 @@ bool sendMail(HTTPClientESP32Ex &http, SMTPData &smtpData);
 
 **Reading Email via IMAP server.**
 
-param *`http`* - HTTPClientESP32Ex WiFi client.
-
 param *`imapData`* - IMAP Data object to hold data and instances.
 
 return - *`Boolean`* type status indicates the success of operation.
 
 ```C++
-bool readMail(HTTPClientESP32Ex &http, IMAPData &imapData);
+bool readMail(IMAPData &imapData);
 ```
 
 
@@ -1692,6 +1689,84 @@ return *`Number`* of all attachemnts.
 
 ```C++
 uint8_t attachFileCount();
+```
+
+
+
+
+
+**Add one or more custom message header field.**
+    
+param *`field`* - custom header String inform of FIELD: VALUE
+
+This header field will add to message header.
+
+```C++
+void addCustomMessageHeader(const String &field);
+```
+
+
+
+
+
+
+**Remove one custom message header field that previously added..**
+    
+param *`field`* - custom custom message header field String to remove.
+
+```C++
+void removeCustomMessageHeader(const String &field);
+```
+
+
+
+
+
+**Remove one custom message header field that previously added by its index.**
+    
+param *`index`* - custom message header field index (number) to remove.
+
+  
+```C++
+void removeCustomMessageHeader(uint8_t index);
+```
+
+
+
+
+
+**Clear all ccustom message header field that previously added.**
+  
+```C++
+void clearCustomMessageHeader();
+```
+
+
+
+
+
+
+**Get the number of custom message header field that previously added.**
+    
+return *`Number`* of custom message header field.
+
+```C++
+uint8_t CustomMessageHeaderCount();
+```
+
+
+
+
+
+
+**Get custom message header field that previously added by index.**
+    
+param *`index`* - The custom message header field index to get.
+
+return *`The custom message header field string at the index`*.
+
+```C++
+String getCustomMessageHeader(uint8_t index);
 ```
 
 

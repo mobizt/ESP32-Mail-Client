@@ -39,8 +39,7 @@
 #define WIFI_SSID "YOUR_WIFI_SSID"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
-//WiFi or HTTP client for internet connection
-HTTPClientESP32Ex http;
+
 
 //The Email Reading data object contains config and data that received
 IMAPData imapData;
@@ -140,7 +139,7 @@ void setup()
   //imapData.setFileStorageType(MailClientStorageType::SPIFFS)
   imapData.setFileStorageType(MailClientStorageType::SD);
 
-  MailClient.readMail(http, imapData);
+  MailClient.readMail(imapData);
 }
 
 void readEmail()
@@ -151,15 +150,15 @@ void readEmail()
 
   imapData.setFetchUID("10");
   imapData.setSearchCriteria("");
-  MailClient.readMail(http, imapData);
+  MailClient.readMail(imapData);
 
   imapData.setFetchUID("11");
   imapData.setSearchCriteria("");
-  MailClient.readMail(http, imapData);
+  MailClient.readMail(imapData);
 
   imapData.setFetchUID("12");
   imapData.setSearchCriteria("");
-  MailClient.readMail(http, imapData);
+  MailClient.readMail(imapData);
 }
 
 void loop()
