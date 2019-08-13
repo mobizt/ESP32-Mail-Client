@@ -1801,7 +1801,6 @@ int ESP32_MailClient::waitSMTPResponse(SMTPData &smtpData)
         continue;
 
       c = (char)r;
-      Serial.print(c);
 
       lineBuf.append(1, c);
 
