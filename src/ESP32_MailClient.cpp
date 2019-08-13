@@ -1015,11 +1015,11 @@ bool ESP32_MailClient::sendMail(SMTPData &smtpData)
     ESP32MailDebug(String(smtpData._port).c_str());
   }
 
-  if (WiFi.status() != WL_CONNECTED)
+  if (WiFi.status() != WL_CONNECTED && !ETH.linkUp())
     WiFi.reconnect();
 
   //Try to reconnect WiFi if lost connection
-  if (WiFi.status() != WL_CONNECTED)
+  if (WiFi.status() != WL_CONNECTED && !ETH.linkUp())
   {
     uint8_t tryCount = 0;
     WiFi.reconnect();
@@ -1033,7 +1033,7 @@ bool ESP32_MailClient::sendMail(SMTPData &smtpData)
   }
 
   //If WiFi is not connected, return false
-  if (WiFi.status() != WL_CONNECTED)
+  if (WiFi.status() != WL_CONNECTED && !ETH.linkUp())
   {
     _smtpStatus = MAIL_CLIENT_STATUS_WIFI_CONNECT_FAIL;
 

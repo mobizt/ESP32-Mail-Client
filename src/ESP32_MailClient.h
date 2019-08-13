@@ -34,6 +34,7 @@
 
 #include <Arduino.h>
 #include "WiFiClientSecureESP32.h"
+#include "ETH.h" 
 #include <vector>
 #include <string>
 #include "SD.h"
