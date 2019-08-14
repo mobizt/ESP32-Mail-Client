@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 v 2.0.0
+# Mail Client Arduino Library for ESP32 v 2.0.1
 
 This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download via SMTP and IMAP servers. 
 
