@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.0.1
+ *Mail Client Arduino Library for ESP32, version 2.0.2
  * 
- * August 14, 2019
+ * August 25, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -2986,13 +2986,13 @@ unsigned char *ESP32_MailClient::base64_decode_char(const unsigned char *src, si
   }
 
   if (count == 0)
-    return NULL;
+    goto exit;
   extra_pad = (4 - count % 4) % 4;
 
   olen = (count + extra_pad) / 4 * 3;
   pos = out = (unsigned char *)malloc(olen);
   if (out == NULL)
-    return NULL;
+    goto exit;
 
   count = 0;
   for (i = 0; i < len + extra_pad; i++)
@@ -3026,7 +3026,7 @@ unsigned char *ESP32_MailClient::base64_decode_char(const unsigned char *src, si
         else
         {
           free(out);
-          return NULL;
+          goto exit;
         }
         break;
       }
@@ -3036,6 +3036,10 @@ unsigned char *ESP32_MailClient::base64_decode_char(const unsigned char *src, si
   *out_len = pos - out;
   delete[] dtable;
   return out;
+
+exit:
+  delete[] dtable;
+  return NULL;
 }
 
 std::string ESP32_MailClient::base64_encode_string(const unsigned char *src, size_t len)
