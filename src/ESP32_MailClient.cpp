@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.0.2
+ *Mail Client Arduino Library for ESP32, version 2.0.3
  * 
- * August 25, 2019
+ * September 5, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -3587,46 +3587,66 @@ String IMAPData::getAttachmentType(size_t messageIndex, size_t attachmentIndex)
 
 String IMAPData::getFrom(uint16_t messageIndex)
 {
-  return _from[messageIndex].c_str();
+  if (messageIndex < _msgNum.size())
+    return _from[messageIndex].c_str();
+  return std::string().c_str();
 }
 
 String IMAPData::getFromCharset(uint16_t messageIndex)
 {
-  return _from_charset[messageIndex].c_str();
+  if (messageIndex < _msgNum.size())
+    return _from_charset[messageIndex].c_str();
+  return std::string().c_str();
 }
 String IMAPData::getTo(uint16_t messageIndex)
 {
-  return _to[messageIndex].c_str();
+  if (messageIndex < _msgNum.size())
+    return _to[messageIndex].c_str();
+  return std::string().c_str();
 }
 String IMAPData::getToCharset(uint16_t messageIndex)
 {
-  return _to_charset[messageIndex].c_str();
+  if (messageIndex < _msgNum.size())
+    return _to_charset[messageIndex].c_str();
+  return std::string().c_str();
 }
 String IMAPData::getCC(uint16_t messageIndex)
 {
-  return _cc[messageIndex].c_str();
+  if (messageIndex < _msgNum.size())
+    return _cc[messageIndex].c_str();
+  return std::string().c_str();
 }
 String IMAPData::getCCCharset(uint16_t messageIndex)
 {
-  return _cc_charset[messageIndex].c_str();
+  if (messageIndex < _msgNum.size())
+    return _cc_charset[messageIndex].c_str();
+  return std::string().c_str();
 }
 
 String IMAPData::getSubject(uint16_t messageIndex)
 {
-  return _subject[messageIndex].c_str();
+  if (messageIndex < _msgNum.size())
+    return _subject[messageIndex].c_str();
+  return std::string().c_str();
 }
 String IMAPData::getSubjectCharset(uint16_t messageIndex)
 {
-  return _subject_charset[messageIndex].c_str();
+  if (messageIndex < _msgNum.size())
+    return _subject_charset[messageIndex].c_str();
+  return std::string().c_str();
 }
 String IMAPData::getHTMLMessage(uint16_t messageIndex)
 {
-  return getMessage(messageIndex, true);
+  if (messageIndex < _msgNum.size())
+    return getMessage(messageIndex, true);
+  return std::string().c_str();
 }
 
 String IMAPData::getTextMessage(uint16_t messageIndex)
 {
-  return getMessage(messageIndex, false);
+  if (messageIndex < _msgNum.size())
+    return getMessage(messageIndex, false);
+  return std::string().c_str();
 }
 
 String IMAPData::getMessage(uint16_t messageIndex, bool htmlFormat)
@@ -3704,21 +3724,23 @@ String IMAPData::getTextMessgaeCharset(uint16_t messageIndex)
 }
 
 String IMAPData::getDate(uint16_t messageIndex)
-{
-  return _date[messageIndex].c_str();
+{ 
+  if(messageIndex < _msgNum.size())
+    return _date[messageIndex].c_str();
+  return std::string().c_str();
 }
 
 String IMAPData::getUID(uint16_t messageIndex)
 {
   char *buf = new char[50];
   memset(buf, 0, 50);
-  if (_uidSearch)
-    itoa(_msgNum[messageIndex], buf, 10);
+  if (_uidSearch){
+    if(messageIndex < _msgNum.size())
+      itoa(_msgNum[messageIndex], buf, 10);
+  }    
 
   String v = buf;
-
   delete[] buf;
-
   return v;
 }
 
@@ -3726,15 +3748,17 @@ String IMAPData::getNumber(uint16_t messageIndex)
 {
   char *buf = new char[50];
   memset(buf, 0, 50);
-  if (!_uidSearch)
-    itoa(_msgNum[messageIndex], buf, 10);
-  else
-    itoa(_msgNum[messageIndex] + 1, buf, 10);
+
+  if(messageIndex < _msgNum.size()){
+    if (!_uidSearch)
+      itoa(_msgNum[messageIndex], buf, 10);
+    else
+      itoa(_msgNum[messageIndex] + 1, buf, 10);
+  }
+  
 
   String v = buf;
-
   delete[] buf;
-
   return v;
 }
 
