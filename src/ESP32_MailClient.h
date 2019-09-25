@@ -1777,16 +1777,18 @@ protected:
 };
 
  static void __attribute__((used)) ESP32MailDebug(const char* msg) {
+ // static void __attribute__((used)) ESP32MailDebug(const __FlashStringHelper* msg) {
 
-  Serial.print(FPSTR("[DEBUG] - "));
+  Serial.print("[DEBUG] - ");
   Serial.println(msg);
 
 }
 
 static void __attribute__((used)) ESP32MailDebugLine(const char *msg, bool newline)
+// static void __attribute__((used)) ESP32MailDebugLine(const __FlashStringHelper* msg, bool newline)
 {
   if (!newline)
-    Serial.print(FPSTR("[DEBUG] - "));
+    Serial.print("[DEBUG] - ");
 
   if (newline)
     Serial.println(msg);
