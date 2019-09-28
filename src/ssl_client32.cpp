@@ -1,5 +1,5 @@
 /*
- *Customized ssl_client.cpp to support STARTTLS protocol, version 1.0.2
+ *Customized ssl_client.cpp to support STARTTLS protocol, version 1.0.3
  * 
  * The MIT License (MIT)
  * Copyright (c) 2019 K. Suwatchai (Mobizt)
@@ -76,7 +76,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     int enable = 1;
 
     if (ssl_client->_debugCallback)
-        ssl_client->_debugCallback(FPSTR("INFO: starting socket"));
+        ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_2, ssl_client);
 
     log_v("Free internal heap before TLS %u", ESP.getFreeHeap());
 
@@ -87,7 +87,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     if (ssl_client->socket < 0)
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("ERROR: opening socket"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_3, ssl_client);
         log_e("ERROR opening socket");
         return ssl_client->socket;
     }
@@ -96,7 +96,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     if (!WiFiGenericClass::hostByName(host, srv))
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("ERROR: could not get ip from host"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_4, ssl_client);
         return -1;
     }
 
@@ -107,7 +107,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     serv_addr.sin_port = htons(port);
 
     if (ssl_client->_debugCallback)
-        ssl_client->_debugCallback(FPSTR("INFO: connecting to Server..."));
+        ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_5, ssl_client);
 
     if (lwip_connect(ssl_client->socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == 0)
     {
@@ -121,12 +121,12 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         lwip_setsockopt(ssl_client->socket, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable));
 
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("INFO: server connected"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_6, ssl_client);
     }
     else
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("ERROR: connect to Server failed!"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_7, ssl_client);
         log_e("Connect to Server failed!");
         return -1;
     }
@@ -137,7 +137,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     {
 
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("INFO: begin STARTTLS handshake"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_8, ssl_client);
 
         if ((ret = starttlsHandshake(ssl_client, port)) != 0)
         {
@@ -147,7 +147,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     }
 
     if (ssl_client->_debugCallback)
-        ssl_client->_debugCallback(FPSTR("INFO: seeding the random number generator"));
+        ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_9, ssl_client);
 
     log_v("Seeding the random number generator");
     mbedtls_entropy_init(&ssl_client->entropy_ctx);
@@ -160,7 +160,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         {
             char *error_buf = new char[100];
             memset(buf, 0, 512);
-            strcpy_P(buf, FPSTR("ERROR: "));
+            strcpy_P(buf, ESP32_SSL_CLIENT_STR_1);
             mbedtls_strerror(ret, error_buf, 100);
             strcat(buf, error_buf);
             ssl_client->_debugCallback(buf);
@@ -171,7 +171,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     }
 
     if (ssl_client->_debugCallback)
-        ssl_client->_debugCallback(FPSTR("INFO: setting up the SSL/TLS structure..."));
+        ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_10, ssl_client);
 
     log_v("Setting up the SSL/TLS structure...");
 
@@ -184,7 +184,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         {
             char *error_buf = new char[100];
             memset(buf, 0, 512);
-            strcpy_P(buf, FPSTR("ERROR: "));
+            strcpy_P(buf, ESP32_SSL_CLIENT_STR_1);
             mbedtls_strerror(ret, error_buf, 100);
             strcat(buf, error_buf);
             ssl_client->_debugCallback(buf);
@@ -199,7 +199,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     if (rootCABuff != NULL)
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("INFO: loading CA cert"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_11, ssl_client);
         log_v("Loading CA cert");
         mbedtls_x509_crt_init(&ssl_client->ca_cert);
         mbedtls_ssl_conf_authmode(&ssl_client->ssl_conf, MBEDTLS_SSL_VERIFY_REQUIRED);
@@ -212,7 +212,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
             {
                 char *error_buf = new char[100];
                 memset(buf, 0, 512);
-                strcpy_P(buf, FPSTR("ERROR: "));
+                strcpy_P(buf, ESP32_SSL_CLIENT_STR_1);
                 mbedtls_strerror(ret, error_buf, 100);
                 strcat(buf, error_buf);
                 ssl_client->_debugCallback(buf);
@@ -224,13 +224,13 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     else if (pskIdent != NULL && psKey != NULL)
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("INFO: setting up PSK"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_12, ssl_client);
         log_v("Setting up PSK");
         // convert PSK from hex to binary
         if ((strlen(psKey) & 1) != 0 || strlen(psKey) > 2 * MBEDTLS_PSK_MAX_LEN)
         {
             if (ssl_client->_debugCallback)
-                ssl_client->_debugCallback(FPSTR("ERROR: pre-shared key not valid hex or too long"));
+                ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_13, ssl_client);
             log_e("pre-shared key not valid hex or too long");
             return -1;
         }
@@ -261,7 +261,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         }
         // set mbedtls config
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("INFO: set mbedtls config"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_14, ssl_client);
         ret = mbedtls_ssl_conf_psk(&ssl_client->ssl_conf, psk, psk_len,
                                    (const unsigned char *)pskIdent, strlen(pskIdent));
         if (ret != 0)
@@ -270,7 +270,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
             {
                 char *error_buf = new char[100];
                 memset(buf, 0, 512);
-                strcpy_P(buf, FPSTR("ERROR: "));
+                strcpy_P(buf, ESP32_SSL_CLIENT_STR_1);
                 mbedtls_strerror(ret, error_buf, 100);
                 strcat(buf, error_buf);
                 ssl_client->_debugCallback(buf);
@@ -294,7 +294,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         mbedtls_pk_init(&ssl_client->client_key);
 
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("INFO: loading CRT cert"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_15, ssl_client);
 
         log_v("Loading CRT cert");
 
@@ -305,7 +305,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
             {
                 char *error_buf = new char[100];
                 memset(buf, 0, 512);
-                strcpy_P(buf, FPSTR("ERROR: "));
+                strcpy_P(buf, ESP32_SSL_CLIENT_STR_1);
                 mbedtls_strerror(ret, error_buf, 100);
                 strcat(buf, error_buf);
                 ssl_client->_debugCallback(buf);
@@ -315,7 +315,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         }
 
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("INFO: loading private key"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_16, ssl_client);
 
         log_v("Loading private key");
         ret = mbedtls_pk_parse_key(&ssl_client->client_key, (const unsigned char *)cli_key, strlen(cli_key) + 1, NULL, 0);
@@ -329,7 +329,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     }
 
     if (ssl_client->_debugCallback)
-        ssl_client->_debugCallback(FPSTR("INFO: setting hostname for TLS session..."));
+        ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_17, ssl_client);
 
     log_v("Setting hostname for TLS session...");
 
@@ -340,7 +340,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         {
             char *error_buf = new char[100];
             memset(buf, 0, 512);
-            strcpy_P(buf, FPSTR("ERROR: "));
+            strcpy_P(buf, ESP32_SSL_CLIENT_STR_1);
             mbedtls_strerror(ret, error_buf, 100);
             strcat(buf, error_buf);
             ssl_client->_debugCallback(buf);
@@ -357,7 +357,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         {
             char *error_buf = new char[100];
             memset(buf, 0, 512);
-            strcpy_P(buf, FPSTR("ERROR: "));
+            strcpy_P(buf, ESP32_SSL_CLIENT_STR_1);
             mbedtls_strerror(ret, error_buf, 100);
             strcat(buf, error_buf);
             ssl_client->_debugCallback(buf);
@@ -370,7 +370,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     mbedtls_ssl_set_bio(&ssl_client->ssl_ctx, &ssl_client->socket, mbedtls_net_send, mbedtls_net_recv, NULL);
 
     if (ssl_client->_debugCallback)
-        ssl_client->_debugCallback(FPSTR("INFO: performing the SSL/TLS handshake..."));
+        ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_18, ssl_client);
 
     log_v("Performing the SSL/TLS handshake...");
     unsigned long handshake_start_time = millis();
@@ -382,7 +382,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
             {
                 char *error_buf = new char[100];
                 memset(buf, 0, 512);
-                strcpy_P(buf, FPSTR("ERROR: "));
+                strcpy_P(buf, ESP32_SSL_CLIENT_STR_1);
                 mbedtls_strerror(ret, error_buf, 100);
                 strcat(buf, error_buf);
                 ssl_client->_debugCallback(buf);
@@ -410,7 +410,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     }
 
     if (ssl_client->_debugCallback)
-        ssl_client->_debugCallback(FPSTR("INFO: verifying peer X.509 certificate..."));
+        ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_19, ssl_client);
 
     log_v("Verifying peer X.509 certificate...");
 
@@ -419,7 +419,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
         bzero(buf, sizeof(buf));
         mbedtls_x509_crt_verify_info(buf, sizeof(buf), "  ! ", flags);
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("ERROR: failed to verify peer certificate!"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_20, ssl_client);
         log_e("Failed to verify peer certificate! verification info: %s", buf);
         stop_ssl_socket(ssl_client, rootCABuff, cli_cert, cli_key); //It's not safe continue.
         return handle_error(ret);
@@ -427,7 +427,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     else
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("INFO: certificate verified"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_21, ssl_client);
         log_v("Certificate verified.");
     }
 
@@ -454,7 +454,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
 void stop_ssl_socket(sslclient_context32 *ssl_client, const char *rootCABuff, const char *cli_cert, const char *cli_key)
 {
     if (ssl_client->_debugCallback)
-        ssl_client->_debugCallback(FPSTR("INFO: cleaning SSL connection"));
+        ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_22, ssl_client);
     log_v("Cleaning SSL connection.");
 
     if (ssl_client->socket >= 0)
@@ -483,7 +483,7 @@ int data_to_read(sslclient_context32 *ssl_client)
             char *buf = new char[512];
             char *error_buf = new char[100];
             memset(buf, 0, 512);
-            strcpy_P(buf, FPSTR("ERROR: "));
+            strcpy_P(buf, ESP32_SSL_CLIENT_STR_1);
             mbedtls_strerror(ret, error_buf, 100);
             strcat(buf, error_buf);
             ssl_client->_debugCallback(buf);
@@ -594,7 +594,7 @@ bool verify_ssl_fingerprint(sslclient_context32 *ssl_client, const char *fp, con
         if (pos > len - 2)
         {
             if (ssl_client->_debugCallback)
-                ssl_client->_debugCallback(FPSTR("ERROR: fingerprint too short"));
+                ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_23, ssl_client);
             log_d("pos:%d len:%d fingerprint too short", pos, len);
             return false;
         }
@@ -602,7 +602,7 @@ bool verify_ssl_fingerprint(sslclient_context32 *ssl_client, const char *fp, con
         if (!parseHexNibble(fp[pos], &high) || !parseHexNibble(fp[pos + 1], &low))
         {
             if (ssl_client->_debugCallback)
-                ssl_client->_debugCallback(FPSTR("ERROR: invalid hex sequence"));
+                ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_24, ssl_client);
             log_d("pos:%d len:%d invalid hex sequence: %c%c", pos, len, fp[pos], fp[pos + 1]);
             return false;
         }
@@ -616,7 +616,7 @@ bool verify_ssl_fingerprint(sslclient_context32 *ssl_client, const char *fp, con
     if (!crt)
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("ERROR: could not fetch peer certificate"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_25, ssl_client);
         log_d("could not fetch peer certificate");
         return false;
     }
@@ -633,7 +633,7 @@ bool verify_ssl_fingerprint(sslclient_context32 *ssl_client, const char *fp, con
     if (memcmp(fingerprint_local, fingerprint_remote, 32))
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("ERROR: fingerprint doesn't match"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_26, ssl_client);
         log_d("fingerprint doesn't match");
         return false;
     }
@@ -723,7 +723,7 @@ int starttlsHandshake(sslclient_context32 *ssl_client, int port)
     if (ret < 0)
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("ERROR: waiting incoming data failed!"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_27, ssl_client);
 
         goto starttls_exit;
     }
@@ -733,7 +733,7 @@ int starttlsHandshake(sslclient_context32 *ssl_client, int port)
     if (ret < 0)
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("ERROR: reading incoming data failed!"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_28, ssl_client);
         goto starttls_exit;
     }
     else
@@ -746,15 +746,15 @@ int starttlsHandshake(sslclient_context32 *ssl_client, int port)
     {
 
         memset(hMsg, 0, msgLen);
-        strcpy_P(hMsg, FPSTR("EHLO DUDE\r\n"));
+        strcpy_P(hMsg, ESP32_SSL_CLIENT_STR_29);
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("INFO: send SMTP command extended HELO"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_30, ssl_client);
         ret = lwip_write(ssl_client->socket, hMsg, strlen(hMsg));
 
         if (ret < 0)
         {
             if (ssl_client->_debugCallback)
-                ssl_client->_debugCallback(FPSTR("ERROR: send SMTP command failed!"));
+                ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_31, ssl_client);
             goto starttls_exit;
         }
 
@@ -763,7 +763,7 @@ int starttlsHandshake(sslclient_context32 *ssl_client, int port)
         if (ret < 0)
         {
             if (ssl_client->_debugCallback)
-                ssl_client->_debugCallback(FPSTR("ERROR: waiting incoming data failed!"));
+                ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_32, ssl_client);
             goto starttls_exit;
         }
 
@@ -773,7 +773,7 @@ int starttlsHandshake(sslclient_context32 *ssl_client, int port)
         if (ret < 0)
         {
             if (ssl_client->_debugCallback)
-                ssl_client->_debugCallback(FPSTR("ERROR: reading incoming data failed!"));
+                ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_33, ssl_client);
             goto starttls_exit;
         }
         else
@@ -784,15 +784,15 @@ int starttlsHandshake(sslclient_context32 *ssl_client, int port)
     }
 
     memset(hMsg, 0, msgLen);
-    strcpy_P(hMsg, FPSTR("STARTTLS\r\n"));
+    strcpy_P(hMsg, ESP32_SSL_CLIENT_STR_34);
     if (ssl_client->_debugCallback)
-        ssl_client->_debugCallback(FPSTR("INFO: send STARTTLS protocol command"));
+        ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_35, ssl_client);
     ret = lwip_write(ssl_client->socket, hMsg, strlen(hMsg));
 
     if (ret < 0)
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("ERROR: send STARTTLS protocol command failed!"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_36, ssl_client);
         goto starttls_exit;
     }
 
@@ -801,7 +801,7 @@ int starttlsHandshake(sslclient_context32 *ssl_client, int port)
     if (ret < 0)
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("ERROR: waiting incoming data failed!"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_37, ssl_client);
         goto starttls_exit;
     }
 
@@ -811,7 +811,7 @@ int starttlsHandshake(sslclient_context32 *ssl_client, int port)
     if (ret < 0)
     {
         if (ssl_client->_debugCallback)
-            ssl_client->_debugCallback(FPSTR("ERROR: reading incoming data failed!"));
+            ESP32SSLClientDebugInfo(ESP32_SSL_CLIENT_STR_38, ssl_client);
         goto starttls_exit;
     }
     else
@@ -831,4 +831,14 @@ starttls_exit:
     delete[] hMsg;
 
     return -1;
+}
+
+void ESP32SSLClientDebugInfo(PGM_P info, sslclient_context32 *ssl_client)
+{
+    size_t dbgInfoLen = strlen_P(info) + 1;
+    char *dbgInfo = new char[dbgInfoLen];
+    memset(dbgInfo, 0, dbgInfoLen);
+    strcpy_P(dbgInfo, info);
+    ssl_client->_debugCallback(dbgInfo);
+    delete[] dbgInfo;
 }

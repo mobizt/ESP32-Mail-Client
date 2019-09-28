@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.0.3
+ *Mail Client Arduino Library for ESP32, version 2.0.4
  * 
- * September 5, 2019
+ * September 28, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -311,7 +311,32 @@ static const char ESP32_MAIL_STR_222[] PROGMEM = "set recipient failed";
 static const char ESP32_MAIL_STR_223[] PROGMEM = " NEW";
 static const char ESP32_MAIL_STR_224[] PROGMEM = "ALL";
 
-
+static const char ESP32_MAIL_STR_225[] PROGMEM = "INFO: connecting to IMAP server...";
+static const char ESP32_MAIL_STR_226[] PROGMEM = "ERROR: could not connect to internet";
+static const char ESP32_MAIL_STR_227[] PROGMEM = "ERROR: ";
+static const char ESP32_MAIL_STR_228[] PROGMEM = "INFO: server connected";
+static const char ESP32_MAIL_STR_229[] PROGMEM = "INFO: send imap command LOGIN";
+static const char ESP32_MAIL_STR_230[] PROGMEM = "INFO: send imap command LIST";
+static const char ESP32_MAIL_STR_231[] PROGMEM = "INFO: send imap command EXAMINE";
+static const char ESP32_MAIL_STR_232[] PROGMEM = "INFO: search message";
+static const char ESP32_MAIL_STR_233[] PROGMEM = "INFO: fetch message";
+static const char ESP32_MAIL_STR_234[] PROGMEM = "INFO: send imap command LOGOUT";
+static const char ESP32_MAIL_STR_235[] PROGMEM = "INFO: message fetch completed";
+static const char ESP32_MAIL_STR_236[] PROGMEM = "INFO: connecting to SMTP server...";
+static const char ESP32_MAIL_STR_237[] PROGMEM = "ERROR: could not connect to internet";
+static const char ESP32_MAIL_STR_238[] PROGMEM = "INFO: smtp server connected";
+static const char ESP32_MAIL_STR_239[] PROGMEM = "INFO: send smtp HELO command";
+static const char ESP32_MAIL_STR_240[] PROGMEM = "INFO: send smtp AUTH LOGIN command";
+static const char ESP32_MAIL_STR_241[] PROGMEM = "INFO: log in with username and password";
+static const char ESP32_MAIL_STR_242[] PROGMEM = "INFO: send email header";
+static const char ESP32_MAIL_STR_243[] PROGMEM = "INFO: send email body";
+static const char ESP32_MAIL_STR_244[] PROGMEM = "INFO: send attachment...";
+static const char ESP32_MAIL_STR_245[] PROGMEM = "INFO: finalize...";
+static const char ESP32_MAIL_STR_246[] PROGMEM = "INFO: email sent successfully";
+static const char ESP32_MAIL_STR_247[] PROGMEM = "";
+static const char ESP32_MAIL_STR_248[] PROGMEM = "";
+static const char ESP32_MAIL_STR_249[] PROGMEM = "";
+static const char ESP32_MAIL_STR_250[] PROGMEM = "";
 
 __attribute__((used)) static bool compFunc(uint32_t i, uint32_t j)
 {
@@ -432,6 +457,8 @@ protected:
 
   std::string smtpErrorReasonStr();
   std::string imapErrorReasonStr();
+  void ESP32MailDebugError();
+  void ESP32MailDebugInfo(PGM_P info);
   void set_message_header(string &header, std::string &message, bool htmlFormat);
   void set_attachment_header(uint8_t index, std::string &header, attachmentData &attach);
   void clientReadAll(WiFiClient *client);
@@ -1776,7 +1803,9 @@ protected:
 
 };
 
- static void __attribute__((used)) ESP32MailDebug(const char* msg) {
+
+static void __attribute__((used)) ESP32MailDebug(const char *msg)
+{
 
   Serial.print(FPSTR("[DEBUG] - "));
   Serial.println(msg);
@@ -1793,6 +1822,7 @@ static void __attribute__((used)) ESP32MailDebugLine(const char *msg, bool newli
     else
       Serial.print(msg);
 }
+
 
 extern ESP32_MailClient MailClient;
 
