@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.0.4
+ *Mail Client Arduino Library for ESP32, version 2.0.5
  * 
- * September 28, 2019
+ * October 25, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -930,6 +930,55 @@ out:
   return false;
 }
 
+bool ESP32_MailClient::reconnect()
+{
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    if (_lastReconnectMillis == 0)
+    {
+      WiFi.reconnect();
+      _lastReconnectMillis = millis();
+    }
+    if (WiFi.status() != WL_CONNECTED)
+    {
+      if (millis() - _lastReconnectMillis > _reconnectTimeout)
+        _lastReconnectMillis = 0;
+      return false;
+    }
+    else
+    {
+      _lastReconnectMillis = 0;
+    }
+  }
+  return WiFi.status() == WL_CONNECTED;
+}
+
+bool ESP32_MailClient::smtpClientAvailable(SMTPData &smtpData, bool available)
+{
+  if (!reconnect())
+    return false;
+  if (!smtpData._net->getStreamPtr())
+    return false;
+
+  if (available)
+    return smtpData._net->getStreamPtr()->connected() && smtpData._net->getStreamPtr()->available();
+  else
+    return smtpData._net->getStreamPtr()->connected() && !smtpData._net->getStreamPtr()->available();
+}
+
+bool ESP32_MailClient::imapClientAvailable(IMAPData &imapData, bool available)
+{
+  if (!reconnect())
+    return false;
+  if (!imapData._net->getStreamPtr())
+    return false;
+
+  if (available)
+    return imapData._net->getStreamPtr()->connected() && imapData._net->getStreamPtr()->available();
+  else
+    return imapData._net->getStreamPtr()->connected() && !imapData._net->getStreamPtr()->available();
+}
+
 void ESP32_MailClient::createDirs(std::string dirs)
 {
   std::string dir = "";
@@ -1797,13 +1846,13 @@ int ESP32_MailClient::waitSMTPResponse(SMTPData &smtpData)
 
   int resCode = -1000;
 
-  while (smtpData._net->getStreamPtr()->connected() && !smtpData._net->getStreamPtr()->available() && millis() - dataTime < smtpData._net->tcpTimeout)
+  while (smtpClientAvailable(smtpData, false) && millis() - dataTime < smtpData._net->tcpTimeout)
     delay(1);
 
   dataTime = millis();
-  if (smtpData._net->getStreamPtr()->connected() && smtpData._net->getStreamPtr()->available())
+  if (smtpClientAvailable(smtpData, true))
   {
-    while (smtpData._net->getStreamPtr()->available())
+    while (smtpClientAvailable(smtpData, true))
     {
       int r = smtpData._net->getStreamPtr()->read();
 
@@ -1898,13 +1947,13 @@ bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandT
     std::vector<std::string>()
         .swap(imapData._folders);
 
-  while (imapData._net->getStreamPtr()->connected() && !imapData._net->getStreamPtr()->available() && millis() - dataTime < imapData._net->tcpTimeout)
+  while (imapClientAvailable(imapData, false) && millis() - dataTime < imapData._net->tcpTimeout)
     delay(1);
 
   dataTime = millis();
-  if (imapData._net->getStreamPtr()->connected() && imapData._net->getStreamPtr()->available())
+  if (imapClientAvailable(imapData, true))
   {
-    while (imapData._net->getStreamPtr()->available() || !completeResp)
+    while (imapClientAvailable(imapData, true) || !completeResp)
     {
 
       int r = imapData._net->getStreamPtr()->read();
