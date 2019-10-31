@@ -24,6 +24,9 @@ readMail	KEYWORD2
 smtpErrorReason	KEYWORD2
 imapErrorReason	KEYWORD2
 sdBegin	KEYWORD2
+setFlag KEYWORD2
+addFlag KEYWORD2
+removeFlag  KEYWORD2
 
 #########################################
 # Methods for IMAP Data object (KEYWORD2)

@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.0.5
+ *Mail Client Arduino Library for ESP32, version 2.0.6
  * 
- * October 25, 2019
+ * October 31, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -930,6 +930,384 @@ out:
   return false;
 }
 
+bool ESP32_MailClient::setFlag(IMAPData &imapData, int msgUID, const String &flag)
+{
+  return _setFlag(imapData, msgUID, flag, 0);
+}
+
+bool ESP32_MailClient::addFlag(IMAPData &imapData, int msgUID, const String &flag)
+{
+  return _setFlag(imapData, msgUID, flag, 1);
+}
+
+bool ESP32_MailClient::removeFlag(IMAPData &imapData, int msgUID, const String &flag)
+{
+  return _setFlag(imapData, msgUID, flag, 2);
+}
+
+bool ESP32_MailClient::_setFlag(IMAPData &imapData, int msgUID, const String &flag, uint8_t action)
+{
+
+  std::string buf;
+
+  bool starttls = imapData._starttls;
+  bool connected = false;
+
+  int bufSize = 50;
+
+  char *_val = new char[bufSize];
+  char *_part = new char[bufSize];
+
+  unsigned long dataTime = 0;
+
+  int count = 0;
+
+  imapData._net->setDebugCallback(NULL);
+
+  if (imapData._debug)
+  {
+    ESP32MailDebugInfo(ESP32_MAIL_STR_225);
+    ESP32MailDebug(imapData._host.c_str());
+    ESP32MailDebug(String(imapData._port).c_str());
+  }
+
+  if (WiFi.status() != WL_CONNECTED)
+    WiFi.reconnect();
+
+  //Try to reconnect WiFi if lost connection
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    uint8_t tryCount = 0;
+    WiFi.reconnect();
+    while (WiFi.status() != WL_CONNECTED)
+    {
+      tryCount++;
+      delay(50);
+      if (tryCount > 60)
+        break;
+    }
+  }
+
+  //If WiFi is not connected, return false
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    _imapStatus = MAIL_CLIENT_STATUS_WIFI_CONNECT_FAIL;
+
+    if (imapData._readCallback)
+    {
+      imapData._cbData._info = ESP32_MAIL_STR_53 + imapErrorReasonStr();
+      imapData._cbData._status = ESP32_MAIL_STR_52;
+      imapData._cbData._success = false;
+      imapData._readCallback(imapData._cbData);
+    }
+    if (imapData._debug)
+      ESP32MailDebugInfo(ESP32_MAIL_STR_226);
+    goto out;
+  }
+
+  if (imapData._readCallback)
+  {
+    imapData._cbData._info = ESP32_MAIL_STR_50;
+    imapData._cbData._status = ESP32_MAIL_STR_51;
+    imapData._cbData._success = false;
+    imapData._readCallback(imapData._cbData);
+  }
+
+  if (imapData._debug)
+    imapData._net->setDebugCallback(ESP32MailDebug);
+
+  if (imapData._rootCA.size() > 0)
+    imapData._net->begin(imapData._host.c_str(), imapData._port, ESP32_MAIL_STR_202, (const char *)imapData._rootCA.front());
+  else
+    imapData._net->begin(imapData._host.c_str(), imapData._port, ESP32_MAIL_STR_202, (const char *)NULL);
+
+  while (!imapData._net->connected() && count < 10)
+  {
+
+    count++;
+
+    if (!imapData._net->connect(starttls))
+    {
+
+      _imapStatus = IMAP_STATUS_SERVER_CONNECT_FAILED;
+
+      if (imapData._readCallback)
+      {
+        imapData._cbData._info = ESP32_MAIL_STR_53 + imapErrorReasonStr();
+        imapData._cbData._status = ESP32_MAIL_STR_52;
+        imapData._cbData._success = false;
+        imapData._readCallback(imapData._cbData);
+      }
+      if (imapData._debug)
+      {
+        ESP32MailDebugError();
+        ESP32MailDebugLine(imapErrorReasonStr().c_str(), true);
+      }
+    }
+    else
+    {
+      break;
+    }
+  }
+
+  if (!imapData._net->connect(starttls))
+  {
+    goto out;
+  }
+
+  connected = true;
+
+  if (imapData._readCallback)
+  {
+    imapData._cbData._info = ESP32_MAIL_STR_54;
+    imapData._cbData._status = ESP32_MAIL_STR_55;
+    imapData._cbData._success = false;
+    imapData._readCallback(imapData._cbData);
+  }
+
+  if (imapData._debug)
+    ESP32MailDebugInfo(ESP32_MAIL_STR_228);
+
+  //Don't expect handshake from some servers
+  dataTime = millis();
+
+  while (imapData._net->connected() && !imapData._net->getStreamPtr()->available() && millis() - 500 < dataTime)
+    delay(1);
+
+  if (imapData._net->connected() && imapData._net->getStreamPtr()->available())
+    while (imapData._net->getStreamPtr()->available())
+      imapData._net->getStreamPtr()->read();
+
+  imapData.clearMessageData();
+
+  if (imapData._readCallback)
+  {
+    imapData._cbData._info = ESP32_MAIL_STR_56;
+    imapData._cbData._status = ESP32_MAIL_STR_57;
+    imapData._cbData._success = false;
+    imapData._readCallback(imapData._cbData);
+  }
+
+  if (imapData._debug)
+    ESP32MailDebugInfo(ESP32_MAIL_STR_229);
+
+  imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_130);
+  imapData._net->getStreamPtr()->print(imapData._loginEmail.c_str());
+  imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_131);
+  imapData._net->getStreamPtr()->println(imapData._loginPassword.c_str());
+
+  if (!waitIMAPResponse(imapData, IMAP_COMMAND_TYPE::LOGIN))
+  {
+    _imapStatus = IMAP_STATUS_LOGIN_FAILED;
+    if (imapData._readCallback)
+    {
+      imapData._cbData._info = ESP32_MAIL_STR_53 + imapErrorReasonStr();
+      imapData._cbData._status = ESP32_MAIL_STR_52;
+      imapData._cbData._success = false;
+      imapData._readCallback(imapData._cbData);
+    }
+    if (imapData._debug)
+    {
+      ESP32MailDebugError();
+      ESP32MailDebugLine(imapErrorReasonStr().c_str(), true);
+    }
+    goto out;
+  }
+
+  if (imapData._readCallback)
+  {
+    imapData._cbData._info = ESP32_MAIL_STR_58;
+    imapData._cbData._status = ESP32_MAIL_STR_59;
+    imapData._cbData._success = false;
+    imapData._readCallback(imapData._cbData);
+  }
+
+  if (imapData._debug)
+    ESP32MailDebugInfo(ESP32_MAIL_STR_230);
+
+  imapData._net->getStreamPtr()->println(ESP32_MAIL_STR_133);
+  if (!waitIMAPResponse(imapData, IMAP_COMMAND_TYPE::LIST))
+  {
+    _imapStatus = IMAP_STATUS_BAD_COMMAND;
+    if (imapData._readCallback)
+    {
+      imapData._cbData._info = ESP32_MAIL_STR_53 + imapErrorReasonStr();
+      imapData._cbData._status = ESP32_MAIL_STR_52;
+      imapData._cbData._success = false;
+      imapData._readCallback(imapData._cbData);
+    }
+    if (imapData._debug)
+    {
+      ESP32MailDebugError();
+      ESP32MailDebugLine(imapErrorReasonStr().c_str(), true);
+    }
+    imapData._cbData.empty();
+  }
+
+  if (imapData._readCallback)
+  {
+
+    imapData._cbData._info = ESP32_MAIL_STR_60;
+    imapData._cbData._success = false;
+    imapData._readCallback(imapData._cbData);
+
+    for (size_t i = 0; i < imapData._folders.size(); i++)
+    {
+      imapData._cbData._info = imapData._folders[i];
+      imapData._cbData._status = "";
+      imapData._cbData._success = false;
+      imapData._readCallback(imapData._cbData);
+    }
+
+    imapData._cbData._info = ESP32_MAIL_STR_61 + imapData._currentFolder + ESP32_MAIL_STR_97;
+    imapData._cbData._status = "";
+    imapData._cbData._success = false;
+    imapData._readCallback(imapData._cbData);
+  }
+
+  if (imapData._debug)
+    ESP32MailDebugInfo(ESP32_MAIL_STR_248);
+
+  imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_247);
+  imapData._net->getStreamPtr()->print(imapData._currentFolder.c_str());
+  imapData._net->getStreamPtr()->println(ESP32_MAIL_STR_136);
+  if (!waitIMAPResponse(imapData, IMAP_COMMAND_TYPE::EXAMINE))
+  {
+    _imapStatus = IMAP_STATUS_BAD_COMMAND;
+    if (imapData._readCallback)
+    {
+      imapData._cbData._info = ESP32_MAIL_STR_53 + imapErrorReasonStr();
+      imapData._cbData._status = ESP32_MAIL_STR_52;
+      imapData._cbData._success = false;
+      imapData._readCallback(imapData._cbData);
+    }
+    if (imapData._debug)
+    {
+      ESP32MailDebugError();
+      ESP32MailDebugLine(imapErrorReasonStr().c_str(), true);
+    }
+    goto out;
+  }
+
+  if (imapData._debug)
+  {
+    if (action == 0)
+      ESP32MailDebugInfo(ESP32_MAIL_STR_253);
+    else if (action == 1)
+      ESP32MailDebugInfo(ESP32_MAIL_STR_254);
+    else
+      ESP32MailDebugInfo(ESP32_MAIL_STR_255);
+  }
+
+  imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_249);
+  imapData._net->getStreamPtr()->print(msgUID);
+  if (action == 0)
+    imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_250);
+  else if (action == 1)
+    imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_251);
+  else
+    imapData._net->getStreamPtr()->print(ESP32_MAIL_STR_252);
+  imapData._net->getStreamPtr()->print(flag);
+  imapData._net->getStreamPtr()->println(ESP32_MAIL_STR_192);
+
+  if (!getIMAPResponse(imapData))
+  {
+    _imapStatus = IMAP_STATUS_PARSE_FLAG_FAILED;
+    if (imapData._readCallback)
+    {
+      imapData._cbData._info = ESP32_MAIL_STR_53 + imapErrorReasonStr();
+      imapData._cbData._status = ESP32_MAIL_STR_52;
+      imapData._cbData._success = false;
+      imapData._readCallback(imapData._cbData);
+    }
+    if (imapData._debug)
+    {
+      ESP32MailDebugError();
+      ESP32MailDebugLine(imapErrorReasonStr().c_str(), true);
+    }
+    goto out;
+  }
+
+  if (imapData._readCallback)
+  {
+    imapData._cbData._info = ESP32_MAIL_STR_85;
+    imapData._cbData._status = ESP32_MAIL_STR_86;
+    imapData._cbData._success = false;
+    imapData._readCallback(imapData._cbData);
+  }
+
+  if (imapData._debug)
+    ESP32MailDebugInfo(ESP32_MAIL_STR_234);
+
+  if (imapData._net->connected())
+    while (imapData._net->getStreamPtr()->available())
+      imapData._net->getStreamPtr()->read();
+
+  imapData._net->getStreamPtr()->println(ESP32_MAIL_STR_146);
+
+  if (!waitIMAPResponse(imapData, 0))
+  {
+    _imapStatus = IMAP_STATUS_BAD_COMMAND;
+    if (imapData._readCallback)
+    {
+      imapData._cbData._info = ESP32_MAIL_STR_53 + imapErrorReasonStr();
+      imapData._cbData._status = ESP32_MAIL_STR_52;
+      imapData._cbData._success = false;
+      imapData._readCallback(imapData._cbData);
+    }
+    if (imapData._debug)
+    {
+      ESP32MailDebugError();
+      ESP32MailDebugLine(imapErrorReasonStr().c_str(), true);
+    }
+    goto out;
+  }
+
+  if (imapData._readCallback)
+  {
+    imapData._cbData._info = ESP32_MAIL_STR_98;
+    imapData._cbData._status = ESP32_MAIL_STR_96;
+    imapData._cbData._success = true;
+    imapData._readCallback(imapData._cbData);
+  }
+
+  if (imapData._debug)
+    ESP32MailDebugInfo(ESP32_MAIL_STR_235);
+
+  if (imapData._net->connected())
+  {
+    while (imapData._net->getStreamPtr()->available())
+      imapData._net->getStreamPtr()->read();
+
+    imapData._net->getStreamPtr()->stop();
+  }
+
+  imapData._cbData.empty();
+  delete[] _val;
+  delete[] _part;
+  std::string().swap(buf);
+
+  return true;
+
+out:
+
+  if (connected)
+  {
+    if (imapData._net->connected())
+    {
+      while (imapData._net->getStreamPtr()->available())
+        imapData._net->getStreamPtr()->read();
+      imapData._net->getStreamPtr()->stop();
+    }
+  }
+
+  imapData._cbData.empty();
+  delete[] _val;
+  delete[] _part;
+  std::string().swap(buf);
+  return false;
+}
+
 bool ESP32_MailClient::reconnect()
 {
   if (WiFi.status() != WL_CONNECTED)
@@ -1703,6 +2081,9 @@ String ESP32_MailClient::imapErrorReason()
   case IMAP_STATUS_BAD_COMMAND:
     res = ESP32_MAIL_STR_46;
     break;
+  case IMAP_STATUS_PARSE_FLAG_FAILED:
+    res = ESP32_MAIL_STR_256;
+    break;
   case MAIL_CLIENT_STATUS_WIFI_CONNECT_FAIL:
     res = ESP32_MAIL_STR_221;
     break;
@@ -1729,6 +2110,9 @@ std::string ESP32_MailClient::imapErrorReasonStr()
     break;
   case IMAP_STATUS_BAD_COMMAND:
     res = ESP32_MAIL_STR_46;
+    break;
+  case IMAP_STATUS_PARSE_FLAG_FAILED:
+    res = ESP32_MAIL_STR_256;
     break;
   case MAIL_CLIENT_STATUS_WIFI_CONNECT_FAIL:
     res = ESP32_MAIL_STR_221;
@@ -1888,6 +2272,42 @@ int ESP32_MailClient::waitSMTPResponse(SMTPData &smtpData)
 
   std::string().swap(lineBuf);
   return resCode;
+}
+
+bool ESP32_MailClient::getIMAPResponse(IMAPData &imapData)
+{
+  long dataTime = millis();
+  char c = 0;
+  bool success = false;
+  std::string str = "";
+  while (imapClientAvailable(imapData, false) && millis() - dataTime < imapData._net->tcpTimeout)
+    delay(1);
+
+  dataTime = millis();
+  if (imapClientAvailable(imapData, true))
+  {
+    while (imapClientAvailable(imapData, true))
+    {
+      int r = imapData._net->getStreamPtr()->read();
+      if (r < 0)
+        continue;
+      c = (char)r;
+      if (c == '\n')
+      {
+        if (imapData._debug)
+          ESP32MailDebug(str.c_str());
+        str.clear();
+      }
+      else
+        str += c;
+
+      if(str.find(ESP32_MAIL_STR_132) != std::string::npos)
+        success = true;
+    }
+  }
+
+  std::string().swap(str);
+  return success;
 }
 
 bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandType, int maxChar, int mailIndex, int messageDataIndex, std::string part)

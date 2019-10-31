@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 v 2.0.5
+# Mail Client Arduino Library for ESP32 v 2.0.6
 
 This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download via SMTP and IMAP servers. 
 
@@ -250,6 +250,62 @@ return - *`Boolean`* type status indicates the success of operation.
 ```C++
 bool readMail(IMAPData &imapData);
 ```
+
+
+
+
+
+**Set the argument to the Flags for message.**
+
+param *`imapData`* - IMAP Data object to hold data and instances.
+
+param *`msgUID`* - The UID of message.
+
+param *`flags`* - The flag list.
+
+return - *`Boolean`* type status indicates the success of operation.
+
+```C++
+bool setFlag(IMAPData &imapData, int msgUID, const String &flags);
+```
+
+
+
+
+
+**Add the argument to the Flags for message.**
+
+param *`imapData`* - IMAP Data object to hold data and instances.
+
+param *`msgUID`* - The UID of message.
+
+param *`flags`* - The flag list.
+
+return - *`Boolean`* type status indicates the success of operation.
+
+```C++
+bool addFlag(IMAPData &imapData, int msgUID, const String &flags);
+```
+
+
+
+
+
+
+**Remove the argument from the Flags for message.**
+
+param *`imapData`* - IMAP Data object to hold data and instances.
+
+param *`msgUID`* - The UID of message.
+
+param *`flags`* - The flag list.
+
+return - *`Boolean`* type status indicates the success of operation.
+
+```C++
+bool removeFlag(IMAPData &imapData, int msgUID, const String &flags);
+```
+
 
 
 

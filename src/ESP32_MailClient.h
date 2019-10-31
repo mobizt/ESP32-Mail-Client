@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.0.5
+ *Mail Client Arduino Library for ESP32, version 2.0.6
  * 
- * October 25, 2019
+ * October 31, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -65,6 +65,7 @@ using namespace std;
 #define IMAP_STATUS_IMAP_RESPONSE_FAILED 2
 #define IMAP_STATUS_LOGIN_FAILED 3
 #define IMAP_STATUS_BAD_COMMAND 4
+#define IMAP_STATUS_PARSE_FLAG_FAILED 5
 
 #define MAIL_CLIENT_STATUS_WIFI_CONNECT_FAIL 100
 
@@ -333,10 +334,16 @@ static const char ESP32_MAIL_STR_243[] PROGMEM = "INFO: send email body";
 static const char ESP32_MAIL_STR_244[] PROGMEM = "INFO: send attachment...";
 static const char ESP32_MAIL_STR_245[] PROGMEM = "INFO: finalize...";
 static const char ESP32_MAIL_STR_246[] PROGMEM = "INFO: email sent successfully";
-static const char ESP32_MAIL_STR_247[] PROGMEM = "";
-static const char ESP32_MAIL_STR_248[] PROGMEM = "";
-static const char ESP32_MAIL_STR_249[] PROGMEM = "";
-static const char ESP32_MAIL_STR_250[] PROGMEM = "";
+static const char ESP32_MAIL_STR_247[] PROGMEM = "$ SELECT \"";
+static const char ESP32_MAIL_STR_248[] PROGMEM = "INFO: send imap command SELECT";
+static const char ESP32_MAIL_STR_249[] PROGMEM = "$ UID STORE ";
+static const char ESP32_MAIL_STR_250[] PROGMEM = " FLAGS (";
+static const char ESP32_MAIL_STR_251[] PROGMEM = " +FLAGS (";
+static const char ESP32_MAIL_STR_252[] PROGMEM = " -FLAGS (";
+static const char ESP32_MAIL_STR_253[] PROGMEM = "INFO: set FLAG";
+static const char ESP32_MAIL_STR_254[] PROGMEM = "INFO: add FLAG";
+static const char ESP32_MAIL_STR_255[] PROGMEM = "INFO: remove FLAG";
+static const char ESP32_MAIL_STR_256[] PROGMEM = "could not parse flag";
 
 __attribute__((used)) static bool compFunc(uint32_t i, uint32_t j)
 {
@@ -406,6 +413,54 @@ public:
 
   /*
   
+    Set the argument to the Flags for message.
+  
+    @param imapData - IMAP Data object to hold data and instances.
+
+    @param msgUID - The UID of message.
+
+    @param flags - The flag list.
+
+
+    @return Boolean type status indicates the success of operation.
+  
+  */
+  bool setFlag(IMAPData &imapData, int msgUID, const String &flags);
+
+  /*
+  
+    Add the argument to the Flags for message.
+  
+    @param imapData - IMAP Data object to hold data and instances.
+
+    @param msgUID - The UID of message.
+
+    @param flags - The flag list.
+
+
+    @return Boolean type status indicates the success of operation.
+  
+  */
+  bool addFlag(IMAPData &imapData, int msgUID, const String &flags);
+
+  /*
+  
+    Remove the argument from the Flags for message.
+  
+    @param imapData - IMAP Data object to hold data and instances.
+
+    @param msgUID - The UID of message.
+
+    @param flags - The flag list.
+
+
+    @return Boolean type status indicates the success of operation.
+  
+  */
+  bool removeFlag(IMAPData &imapData, int msgUID, const String &flags);
+
+  /*
+  
     Get the Email sending error details.
   
     @return Error details string (String object).
@@ -448,6 +503,8 @@ public:
   struct IMAP_COMMAND_TYPE;
   struct IMAP_HEADER_TYPE;
 
+  
+
 protected:
   int _smtpStatus = 0;
   int _imapStatus = 0;
@@ -456,6 +513,8 @@ protected:
   uint8_t _sck, _miso, _mosi, _ss;
   unsigned long _lastReconnectMillis = 0;
   uint16_t _reconnectTimeout = 10000;
+
+  
 
   std::string smtpErrorReasonStr();
   std::string imapErrorReasonStr();
@@ -471,12 +530,13 @@ protected:
   void send_base64_encode_file(WiFiClient *client, File file);
   int waitSMTPResponse(SMTPData &smtpData);
   bool waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandType = 0, int maxChar = 0, int mailIndex = -1, int messageDataIndex = -1, std ::string part = "");
+  bool _setFlag(IMAPData &imapData, int msgUID, const String &flags, uint8_t action);
+  bool getIMAPResponse(IMAPData &imapData);
   void createDirs(std::string dirs);
   bool smtpClientAvailable(SMTPData &smtpData, bool available);
   bool imapClientAvailable(IMAPData &imapData, bool available);
   bool reconnect();
   bool sdTest();
-  
 };
 
 class messageBodyData
