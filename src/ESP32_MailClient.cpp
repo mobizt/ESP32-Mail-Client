@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.0.6
+ *Mail Client Arduino Library for ESP32, version 2.0.7
  * 
- * October 31, 2019
+ * November 10, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -192,7 +192,7 @@ bool ESP32_MailClient::readMail(IMAPData &imapData)
   dataTime = millis();
 
   while (imapData._net->connected() && !imapData._net->getStreamPtr()->available() && millis() - 500 < dataTime)
-    delay(1);
+    delay(0);
 
   if (imapData._net->connected() && imapData._net->getStreamPtr()->available())
     while (imapData._net->getStreamPtr()->available())
@@ -679,7 +679,7 @@ bool ESP32_MailClient::readMail(IMAPData &imapData)
           if (imapData._storageType == MailClientStorageType::SD)
           {
             _sdOk = sdTest();
-            delay(200);
+            delay(100);
             if (_sdOk)
               if (!SD.exists(imapData._savePath.c_str()))
                 createDirs(imapData._savePath);
@@ -806,7 +806,7 @@ bool ESP32_MailClient::readMail(IMAPData &imapData)
                     }
                   }
 
-                  delay(1);
+                  delay(0);
                 }
               }
               else
@@ -1072,7 +1072,7 @@ bool ESP32_MailClient::_setFlag(IMAPData &imapData, int msgUID, const String &fl
   dataTime = millis();
 
   while (imapData._net->connected() && !imapData._net->getStreamPtr()->available() && millis() - 500 < dataTime)
-    delay(1);
+    delay(0);
 
   if (imapData._net->connected() && imapData._net->getStreamPtr()->available())
     while (imapData._net->getStreamPtr()->available())
@@ -1419,6 +1419,7 @@ bool ESP32_MailClient::sendMail(SMTPData &smtpData)
   bool starttls = smtpData._starttls;
   bool connected = false;
   char *_val = new char[bufSize];
+  int res = 0;
 
   smtpData._net->setDebugCallback(NULL);
 
@@ -1898,7 +1899,7 @@ bool ESP32_MailClient::sendMail(SMTPData &smtpData)
       buf.clear();
       set_attachment_header(i, buf, smtpData._attach);
       smtpData._net->getStreamPtr()->print(buf.c_str());
-      send_base64_encode_data(smtpData._net->getStreamPtr(), smtpData._attach._buf[i].front(), smtpData._attach._size[i]);
+      send_base64_encode_mime_data(smtpData._net->getStreamPtr(), smtpData._attach._buf[i].front(), smtpData._attach._size[i]);
       smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_34);
     }
     else
@@ -1941,7 +1942,7 @@ bool ESP32_MailClient::sendMail(SMTPData &smtpData)
         else if (smtpData._storageType == MailClientStorageType::SPIFFS)
           file = SPIFFS.open(smtpData._attach._filename[i].c_str(), FILE_READ);
 
-        send_base64_encode_file(smtpData._net->getStreamPtr(), file);
+        send_base64_encode_mime_file(smtpData._net->getStreamPtr(), file);
         smtpData._net->getStreamPtr()->print(ESP32_MAIL_STR_34);
       }
     }
@@ -1962,7 +1963,9 @@ bool ESP32_MailClient::sendMail(SMTPData &smtpData)
     smtpData._sendCallback(smtpData._cbData);
   }
 
-  if (waitSMTPResponse(smtpData) != 250)
+  res = waitSMTPResponse(smtpData);
+
+  if (res != 250 && res != -1000)
   {
     _smtpStatus = SMTP_STATUS_SEND_BODY_FAILED;
     if (smtpData._sendCallback)
@@ -2221,17 +2224,14 @@ int ESP32_MailClient::waitSMTPResponse(SMTPData &smtpData)
 {
 
   long dataTime = millis();
-
-  char c = 0;
+  char c = '\0';
   std::string lineBuf = "";
   int lfCount = 0;
-  size_t p1 = 0;
-  bool completeResp = false;
-
+  size_t p1 = 0;  
   int resCode = -1000;
 
   while (smtpClientAvailable(smtpData, false) && millis() - dataTime < smtpData._net->tcpTimeout)
-    delay(1);
+    delay(0);
 
   dataTime = millis();
   if (smtpClientAvailable(smtpData, true))
@@ -2246,10 +2246,6 @@ int ESP32_MailClient::waitSMTPResponse(SMTPData &smtpData)
       c = (char)r;
 
       lineBuf.append(1, c);
-
-      if (lineBuf.find(ESP32_MAIL_STR_158) != std::string::npos || lineBuf.find(ESP32_MAIL_STR_159) != std::string::npos)
-        completeResp = true;
-
       if (c == '\n')
       {
         dataTime = millis();
@@ -2265,11 +2261,10 @@ int ESP32_MailClient::waitSMTPResponse(SMTPData &smtpData)
         lfCount++;
       }
 
-      if (millis() - dataTime > smtpData._net->tcpTimeout + 30000 || completeResp)
+      if (millis() - dataTime > smtpData._net->tcpTimeout + 30000)
         break;
     }
   }
-
   std::string().swap(lineBuf);
   return resCode;
 }
@@ -2277,11 +2272,11 @@ int ESP32_MailClient::waitSMTPResponse(SMTPData &smtpData)
 bool ESP32_MailClient::getIMAPResponse(IMAPData &imapData)
 {
   long dataTime = millis();
-  char c = 0;
+  char c = '\0';
   bool success = false;
   std::string str = "";
   while (imapClientAvailable(imapData, false) && millis() - dataTime < imapData._net->tcpTimeout)
-    delay(1);
+    delay(0);
 
   dataTime = millis();
   if (imapClientAvailable(imapData, true))
@@ -2301,7 +2296,7 @@ bool ESP32_MailClient::getIMAPResponse(IMAPData &imapData)
       else
         str += c;
 
-      if(str.find(ESP32_MAIL_STR_132) != std::string::npos)
+      if (str.find(ESP32_MAIL_STR_132) != std::string::npos)
         success = true;
     }
   }
@@ -2368,7 +2363,7 @@ bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandT
         .swap(imapData._folders);
 
   while (imapClientAvailable(imapData, false) && millis() - dataTime < imapData._net->tcpTimeout)
-    delay(1);
+    delay(0);
 
   dataTime = millis();
   if (imapClientAvailable(imapData, true))
@@ -3546,7 +3541,6 @@ std::string ESP32_MailClient::base64_encode_string(const unsigned char *src, siz
     *pos++ = base64_table[((in[1] & 0x0f) << 2) | (in[2] >> 6)];
     *pos++ = base64_table[in[2] & 0x3f];
     in += 3;
-    //yield();
   }
 
   if (end - in)
@@ -3568,7 +3562,7 @@ std::string ESP32_MailClient::base64_encode_string(const unsigned char *src, siz
   return outStr;
 }
 
-void ESP32_MailClient::send_base64_encode_data(WiFiClient *client, const unsigned char *src, size_t len)
+void ESP32_MailClient::send_base64_encode_mime_data(WiFiClient *client, const unsigned char *src, size_t len)
 {
 
   const unsigned char *end, *in;
@@ -3583,9 +3577,11 @@ void ESP32_MailClient::send_base64_encode_data(WiFiClient *client, const unsigne
   end = src + len;
   in = src;
 
-  size_t chunkSize = 512;
+  size_t chunkSize = 936;
   size_t byteAdd = 0;
   size_t byteSent = 0;
+
+  int dByte = 0;
 
   unsigned char *buf = new unsigned char[chunkSize];
   memset(buf, 0, chunkSize);
@@ -3596,6 +3592,15 @@ void ESP32_MailClient::send_base64_encode_data(WiFiClient *client, const unsigne
     buf[byteAdd++] = base64_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
     buf[byteAdd++] = base64_table[((in[1] & 0x0f) << 2) | (in[2] >> 6)];
     buf[byteAdd++] = base64_table[in[2] & 0x3f];
+
+    dByte += 4;
+
+    if (dByte >= 76 && byteAdd < chunkSize)
+    {
+      buf[byteAdd++] = 0x0d;
+      buf[byteAdd++] = 0x0a;
+      dByte = 0;
+    }
 
     if (len > chunkSize)
     {
@@ -3609,7 +3614,6 @@ void ESP32_MailClient::send_base64_encode_data(WiFiClient *client, const unsigne
     }
 
     in += 3;
-    //yield();
   }
 
   if (byteAdd > 0)
@@ -3639,13 +3643,13 @@ void ESP32_MailClient::send_base64_encode_data(WiFiClient *client, const unsigne
   delete[] buf;
 }
 
-void ESP32_MailClient::send_base64_encode_file(WiFiClient *client, File file)
+void ESP32_MailClient::send_base64_encode_mime_file(WiFiClient *client, File file)
 {
 
   if (!file)
     return;
 
-  size_t chunkSize = 512;
+  size_t chunkSize = 936;
   size_t byteAdd = 0;
   size_t byteSent = 0;
 
@@ -3655,6 +3659,8 @@ void ESP32_MailClient::send_base64_encode_file(WiFiClient *client, File file)
   size_t len = file.size();
   size_t fbufIndex = 0;
   unsigned char *fbuf = new unsigned char[3];
+
+  int dByte = 0;
 
   while (file.available())
   {
@@ -3667,6 +3673,15 @@ void ESP32_MailClient::send_base64_encode_file(WiFiClient *client, File file)
       buf[byteAdd++] = base64_table[((fbuf[0] & 0x03) << 4) | (fbuf[1] >> 4)];
       buf[byteAdd++] = base64_table[((fbuf[1] & 0x0f) << 2) | (fbuf[2] >> 6)];
       buf[byteAdd++] = base64_table[fbuf[2] & 0x3f];
+
+      dByte += 4;
+
+      if (dByte >= 76 && byteAdd < chunkSize)
+      {
+        buf[byteAdd++] = 0x0d;
+        buf[byteAdd++] = 0x0a;
+        dByte = 0;
+      }
 
       if (len > chunkSize)
       {

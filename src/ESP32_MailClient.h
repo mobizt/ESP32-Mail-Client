@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.0.6
+ *Mail Client Arduino Library for ESP32, version 2.0.7
  * 
- * October 31, 2019
+ * November 10, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -135,7 +135,7 @@ static const char ESP32_MAIL_STR_45[] PROGMEM = "could not sigin";
 static const char ESP32_MAIL_STR_46[] PROGMEM = "could not parse command";
 static const char ESP32_MAIL_STR_47[] PROGMEM = "login password is not valid";
 static const char ESP32_MAIL_STR_48[] PROGMEM = "send header failed";
-static const char ESP32_MAIL_STR_49[] PROGMEM = "send header failed";
+static const char ESP32_MAIL_STR_49[] PROGMEM = "send body failed";
 static const char ESP32_MAIL_STR_50[] PROGMEM = "Connecting to IMAP server...";
 static const char ESP32_MAIL_STR_51[] PROGMEM = "initialize";
 static const char ESP32_MAIL_STR_52[] PROGMEM = "failed";
@@ -526,8 +526,8 @@ protected:
   double base64DecodeSize(std::string lastBase64String, int length);
   unsigned char *base64_decode_char(const unsigned char *src, size_t len, size_t *out_len);
   std::string base64_encode_string(const unsigned char *src, size_t len);
-  void send_base64_encode_data(WiFiClient *client, const unsigned char *src, size_t len);
-  void send_base64_encode_file(WiFiClient *client, File file);
+  void send_base64_encode_mime_data(WiFiClient *client, const unsigned char *src, size_t len);
+  void send_base64_encode_mime_file(WiFiClient *client, File file);
   int waitSMTPResponse(SMTPData &smtpData);
   bool waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandType = 0, int maxChar = 0, int mailIndex = -1, int messageDataIndex = -1, std ::string part = "");
   bool _setFlag(IMAPData &imapData, int msgUID, const String &flags, uint8_t action);

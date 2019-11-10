@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 v 2.0.6
+# Mail Client Arduino Library for ESP32 v 2.0.7
 
 This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download via SMTP and IMAP servers. 
 
@@ -44,7 +44,7 @@ This following devices were tested and work well.
 ## Prerequisites
 
 
-For library version 1.2.0 and newer, STARTTLS was supported and can be enable automatically when port 587 for SMTP was used or can set manually thrugh smtpData.setSTARTTLS(true) and for IMAP through imapData.setSTARTTLS(true).
+For library version 1.2.0 or newer, STARTTLS was supported and can be enable automatically when port 587 for SMTP was used or can set manually thrugh smtpData.setSTARTTLS(true) and for IMAP through imapData.setSTARTTLS(true).
 
 
 
