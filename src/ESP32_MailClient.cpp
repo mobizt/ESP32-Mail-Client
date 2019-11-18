@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.0.7
+ *Mail Client Arduino Library for ESP32, version 2.0.8
  * 
- * November 10, 2019
+ * November 18, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -679,7 +679,6 @@ bool ESP32_MailClient::readMail(IMAPData &imapData)
           if (imapData._storageType == MailClientStorageType::SD)
           {
             _sdOk = sdTest();
-            delay(100);
             if (_sdOk)
               if (!SD.exists(imapData._savePath.c_str()))
                 createDirs(imapData._savePath);
@@ -2383,9 +2382,16 @@ bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandT
 
       if (imapCommandType == IMAP_COMMAND_TYPE::SEARCH && lfCount == 0)
       {
-        delayMicroseconds(1);
+        delay(0);
         if (c == ' ')
         {
+          p3 = msgNumBuf.find(ESP32_MAIL_STR_257);
+          if (p3 != std::string::npos)
+          {
+            validResponse = false;
+            break;
+          }
+
           if (msgNumBuf != ESP32_MAIL_STR_183 && msgNumBuf != ESP32_MAIL_STR_141 && imapData._msgNum.size() <= max)
           {
             imapData._msgNum.push_back(atoi(msgNumBuf.c_str()));
@@ -2393,7 +2399,7 @@ bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandT
             if (imapData._msgNum.size() > imapData._emailNumMax && imapData._recentSort)
               imapData._msgNum.erase(imapData._msgNum.begin());
             imapData._searchCount++;
-          }
+            }
 
           msgNumBuf.clear();
         }
@@ -2529,7 +2535,7 @@ bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandT
 
           validResponse = true;
 
-          if (p2 != std::string::npos)
+          if (p2 != std::string::npos || p3 != std::string::npos)
             validResponse = false;
 
           if (payloadLength == 0)

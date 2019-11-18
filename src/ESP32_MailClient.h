@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.0.7
+ *Mail Client Arduino Library for ESP32, version 2.0.8
  * 
- * November 10, 2019
+ * November 18, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -344,6 +344,7 @@ static const char ESP32_MAIL_STR_253[] PROGMEM = "INFO: set FLAG";
 static const char ESP32_MAIL_STR_254[] PROGMEM = "INFO: add FLAG";
 static const char ESP32_MAIL_STR_255[] PROGMEM = "INFO: remove FLAG";
 static const char ESP32_MAIL_STR_256[] PROGMEM = "could not parse flag";
+static const char ESP32_MAIL_STR_257[] PROGMEM = "BAD";
 
 __attribute__((used)) static bool compFunc(uint32_t i, uint32_t j)
 {
