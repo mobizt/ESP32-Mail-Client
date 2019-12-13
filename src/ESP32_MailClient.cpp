@@ -2226,7 +2226,7 @@ int ESP32_MailClient::waitSMTPResponse(SMTPData &smtpData)
   char c = '\0';
   std::string lineBuf = "";
   int lfCount = 0;
-  size_t p1 = 0;  
+  size_t p1 = 0;
   int resCode = -1000;
 
   while (smtpClientAvailable(smtpData, false) && millis() - dataTime < smtpData._net->tcpTimeout)
@@ -2399,7 +2399,7 @@ bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandT
             if (imapData._msgNum.size() > imapData._emailNumMax && imapData._recentSort)
               imapData._msgNum.erase(imapData._msgNum.begin());
             imapData._searchCount++;
-            }
+          }
 
           msgNumBuf.clear();
         }
@@ -3588,7 +3588,6 @@ void ESP32_MailClient::send_base64_encode_mime_data(WiFiClient *client, const un
   size_t byteSent = 0;
 
   int dByte = 0;
-
   unsigned char *buf = new unsigned char[chunkSize];
   memset(buf, 0, chunkSize);
 
@@ -3598,27 +3597,23 @@ void ESP32_MailClient::send_base64_encode_mime_data(WiFiClient *client, const un
     buf[byteAdd++] = base64_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
     buf[byteAdd++] = base64_table[((in[1] & 0x0f) << 2) | (in[2] >> 6)];
     buf[byteAdd++] = base64_table[in[2] & 0x3f];
-
     dByte += 4;
-
-    if (dByte >= 76 && byteAdd < chunkSize)
+    if (dByte == 76)
     {
-      buf[byteAdd++] = 0x0d;
-      buf[byteAdd++] = 0x0a;
+      if(byteAdd + 1 < chunkSize)
+      {
+        buf[byteAdd++] = 0x0d;
+        buf[byteAdd++] = 0x0a;
+      }
       dByte = 0;
     }
-
-    if (len > chunkSize)
+    if (byteAdd >= chunkSize - 4)
     {
-      if (byteAdd >= chunkSize)
-      {
-        byteSent += byteAdd;
-        client->write(buf, byteAdd);
-        memset(buf, 0, chunkSize);
-        byteAdd = 0;
-      }
+      byteSent += byteAdd;
+      client->write(buf, byteAdd);
+      memset(buf, 0, chunkSize);
+      byteAdd = 0;
     }
-
     in += 3;
   }
 
@@ -3655,7 +3650,7 @@ void ESP32_MailClient::send_base64_encode_mime_file(WiFiClient *client, File fil
   if (!file)
     return;
 
-  size_t chunkSize = 936;
+  size_t chunkSize = 912;
   size_t byteAdd = 0;
   size_t byteSent = 0;
 
@@ -3674,36 +3669,31 @@ void ESP32_MailClient::send_base64_encode_mime_file(WiFiClient *client, File fil
     if (len - fbufIndex >= 3)
     {
       file.read(fbuf, 3);
-
       buf[byteAdd++] = base64_table[fbuf[0] >> 2];
       buf[byteAdd++] = base64_table[((fbuf[0] & 0x03) << 4) | (fbuf[1] >> 4)];
       buf[byteAdd++] = base64_table[((fbuf[1] & 0x0f) << 2) | (fbuf[2] >> 6)];
       buf[byteAdd++] = base64_table[fbuf[2] & 0x3f];
-
       dByte += 4;
-
-      if (dByte >= 76 && byteAdd < chunkSize)
+      if (dByte == 76)
       {
-        buf[byteAdd++] = 0x0d;
-        buf[byteAdd++] = 0x0a;
+        if(byteAdd + 1 < chunkSize)
+        {
+          buf[byteAdd++] = 0x0d;
+          buf[byteAdd++] = 0x0a;
+        }
         dByte = 0;
       }
-
-      if (len > chunkSize)
+      if (byteAdd >= chunkSize - 4)
       {
-        if (byteAdd >= chunkSize)
-        {
-          byteSent += byteAdd;
-          client->write(buf, byteAdd);
-          memset(buf, 0, chunkSize);
-          byteAdd = 0;
-        }
+        byteSent += byteAdd;
+        client->write(buf, byteAdd);
+        memset(buf, 0, chunkSize);
+        byteAdd = 0;
       }
       fbufIndex += 3;
     }
     else
     {
-
       if (len - fbufIndex == 1)
       {
         fbuf[0] = file.read();
@@ -3713,22 +3703,18 @@ void ESP32_MailClient::send_base64_encode_mime_file(WiFiClient *client, File fil
         fbuf[0] = file.read();
         fbuf[1] = file.read();
       }
-
       break;
     }
   }
 
   file.close();
-
   if (byteAdd > 0)
     client->write(buf, byteAdd);
 
   if (len - fbufIndex > 0)
   {
-
     memset(buf, 0, chunkSize);
     byteAdd = 0;
-
     buf[byteAdd++] = base64_table[fbuf[0] >> 2];
     if (len - fbufIndex == 1)
     {
@@ -3741,7 +3727,6 @@ void ESP32_MailClient::send_base64_encode_mime_file(WiFiClient *client, File fil
       buf[byteAdd++] = base64_table[(fbuf[1] & 0x0f) << 2];
     }
     buf[byteAdd++] = '=';
-
     client->write(buf, byteAdd);
   }
   delete[] buf;
