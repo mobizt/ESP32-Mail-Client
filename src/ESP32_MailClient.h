@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.0.8
+ *Mail Client Arduino Library for ESP32, version 2.1.0
  * 
- * November 18, 2019
+ * December 13, 2019
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -43,6 +43,7 @@
 #include "SPIFFS.h"
 #include "RFC2047.h"
 #include "ESP32MailHTTPClient.h"
+#include "ESP32TimeHelper.h"
 
 #define FORMAT_SPIFFS_IF_FAILED true
 
@@ -428,6 +429,8 @@ public:
   */
   bool setFlag(IMAPData &imapData, int msgUID, const String &flags);
 
+
+
   /*
   
     Add the argument to the Flags for message.
@@ -505,8 +508,9 @@ public:
   struct IMAP_HEADER_TYPE;
 
   
+ESP32TimeHelper Time;
 
-protected:
+private:
   int _smtpStatus = 0;
   int _imapStatus = 0;
   bool _sdOk = false;
@@ -514,7 +518,6 @@ protected:
   uint8_t _sck, _miso, _mosi, _ss;
   unsigned long _lastReconnectMillis = 0;
   uint16_t _reconnectTimeout = 10000;
-
   
 
   std::string smtpErrorReasonStr();

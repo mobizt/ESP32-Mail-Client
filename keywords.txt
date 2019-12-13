@@ -14,6 +14,8 @@ messageBodyData	KEYWORD1
 DownloadProgress	KEYWORD1
 MessageData	KEYWORD1
 
+TIME    KEYWORD1
+
 
 ##################################
 # Methods and Functions (KEYWORD2)
@@ -27,6 +29,25 @@ sdBegin	KEYWORD2
 setFlag KEYWORD2
 addFlag KEYWORD2
 removeFlag  KEYWORD2
+
+
+setClock	KEYWORD2
+getUnixTime	KEYWORD2
+getTimestamp	KEYWORD2
+getYear	KEYWORD2
+getMonth	KEYWORD2
+getDay	KEYWORD2
+getDayOfWeek	KEYWORD2
+getDayOfWeekString	KEYWORD2
+getHour	KEYWORD2
+getMin	KEYWORD2
+getSec	KEYWORD2
+getNumberOfDayThisYear	KEYWORD2
+getTotalDays	KEYWORD2
+dayofweek	KEYWORD2
+getCurrentSecond	KEYWORD2
+getCurrentTimestamp	KEYWORD2
+getTimeFromSec	KEYWORD2
 
 #########################################
 # Methods for IMAP Data object (KEYWORD2)
@@ -145,3 +166,5 @@ startAt	KEYWORD2
 endAt	KEYWORD2
 equalTo	KEYWORD2
 equalTo	KEYWORD2
+
+clockReady	KEYWORD3

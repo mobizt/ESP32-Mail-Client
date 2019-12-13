@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 v 2.0.9
+# Mail Client Arduino Library for ESP32 v 2.1.0
 
 This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download via SMTP and IMAP servers. 
 
@@ -36,7 +36,9 @@ This following devices were tested and work well.
 
 * Support Email message fetch and search via IMAP command as in RFC 3501 (depending on IMAP server implementation).
 
-* Support Ethernet 
+* Support Ethernet.
+
+* Built-in Time function.
 
 
 
@@ -116,6 +118,9 @@ MailClient.sendMail(smtpData));
 //Or Receive Email
 
 MailClient.readdMail(imapData));
+
+
+//For Time functions, see the Time.ino examples
 
 
 
