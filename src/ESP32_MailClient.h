@@ -1,5 +1,5 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.1.0
+ *Mail Client Arduino Library for ESP32, version 2.1.1
  * 
  * December 13, 2019
  * 

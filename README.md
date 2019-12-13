@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 v 2.1.0
+# Mail Client Arduino Library for ESP32 v 2.1.1
 
 This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download via SMTP and IMAP servers. 
 
@@ -119,8 +119,6 @@ MailClient.sendMail(smtpData));
 
 MailClient.readdMail(imapData));
 
-
-//For Time functions, see the Time.ino examples
 
 
 
@@ -1854,6 +1852,286 @@ param *`sendCallback`* - The callback function that accept the sendStatusCallbac
 void setSendCallback(sendStatusCallback sendCallback);
 ```
 
+
+
+
+__MailClient.Time functions__
+
+
+**Get the time from NTP server and set to device.**
+
+param *`gmtOffset`* - The GMT time offset in hour.
+
+param *`daylightOffset`* - The Daylight time offset in hour.
+
+return - *`Boolean`* type status indicates the success of operation.
+
+This requires internet connectivity.
+
+```C++
+bool setClock(float gmtOffset, float daylightOffset);
+```
+
+
+
+
+
+
+**Get the Unix time.**
+
+return - *`uint32_t`* value of current Unix time.
+
+```C++
+uint32_t getUnixTime();
+```
+
+
+
+
+
+
+**Get timestamp from defined year, month, date, hour, minute, and second.**
+
+param *`year`* - Year.
+param *`mon`* - Month (1 to 12).
+param *`date`* - Date.
+param *`hour`* - Hour.
+param *`mins`* - Minute.
+param *`sec`* - Second.
+
+return - *`time_t`* value of timestamp.
+
+```C++
+time_t getTimestamp(int year, int mon, int date, int hour, int mins, int sec);
+```
+
+
+
+
+
+
+**Get current year.**
+
+return - *`int`* value of current year.
+
+```C++
+int getYear();
+```
+
+
+
+
+
+
+**Get current month.**
+
+return - *`int`* value of current month.
+
+```C++
+int getMonth();
+```
+
+
+
+
+
+**Get current date.**
+
+return - *`int`* value of current date.
+
+```C++
+int getDay();
+```
+
+
+
+
+
+
+**Get current day of week.**
+
+return - *`int`* value of day of week.
+
+1 for sunday and 7 for saturday
+
+```C++
+int getDayOfWeek();
+```
+
+
+
+
+
+**Get current day of week in String.**
+
+return - *`String`* value of day of week.
+
+Returns sunday, monday, tuesday, wednesday, thurseday, friday and saturday.
+
+```C++
+String getDayOfWeekString();
+```
+
+
+
+
+
+
+**Get current hour.**
+
+return - *`int`* value of current hour (0 to 23).
+
+```C++
+int getHour();
+```
+
+
+
+
+
+
+**Get current minute.**
+
+return - *`int`* value of current minute (0 to 59).
+
+```C++
+int getMin();
+```
+
+
+
+
+
+
+**Get current second.**
+
+return - *`int`* value of current second (0 to 59).
+
+```C++
+int getSecond();
+```
+
+
+
+
+
+
+
+**Get the total days of current year.**
+
+return - *`int`* value of total days of current year.
+
+```C++
+int getNumberOfDayThisYear();
+```
+
+
+
+
+
+
+**Get the total days of from January 1, 1970 to specific date.**
+
+param *`year`* - Year from 1970.
+param *`mon`* - Month (1 to 12).
+param *`date`* - Date.
+
+return - *`int`* value of total days.
+
+```C++
+int getTotalDays(int year, int month, int day);
+```
+
+
+
+
+
+**Get the day of week from specific date.**
+
+param *`year`* - Year.
+param *`month`* - Month (1 to 12).
+param *`day`* - Date.
+
+return - *`int`* value of day of week.
+
+1 for sunday and 7 for saturday
+
+```C++
+int dayofWeek(int year, int month, int day);
+```
+
+
+
+
+
+
+**Get the second of current hour.**
+
+return - *`int`* value of current second.
+
+```C++
+int getCurrentSecond();
+```
+
+
+
+
+
+**Get the current timestamp.**
+
+return - *`uint64_t`* value of current timestamp.
+
+```C++
+uint64_t getCurrentTimestamp();
+```
+
+
+
+
+
+
+**Get time (year, month, day, hour, minute, and second) from second counted from January 1, 1970.**
+
+param *`secCount`* - The seconds from January 1, 1970 00.00.
+param *`yrs`* - The return year.
+param *`months`* - The return month.
+param *`days`* - The return day.
+param *`hr`* - The return hour.
+param *`min`* - The return minute.
+param *`sec`* - The return second.
+
+```C++
+void getTimeFromSec(int secCount, int &yrs, int &months, int &days, int &hr, int &min, int &sec);
+```
+
+
+
+
+
+
+## License
+
+The MIT License (MIT)
+
+Copyright (c) 2019 K. Suwatchai (Mobizt)
+
+
+Permission is hereby granted, free of charge, to any person returning a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 
