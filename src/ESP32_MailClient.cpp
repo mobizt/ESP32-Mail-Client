@@ -3650,7 +3650,7 @@ void ESP32_MailClient::send_base64_encode_mime_file(WiFiClient *client, File fil
   if (!file)
     return;
 
-  size_t chunkSize = 912;
+  size_t chunkSize = 936;
   size_t byteAdd = 0;
   size_t byteSent = 0;
 
