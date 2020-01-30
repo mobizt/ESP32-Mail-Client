@@ -60,6 +60,10 @@ From Arduino IDE, goto menu **Sketch** -> **Include Library** -> **Add .ZIP Libr
 Go to menu **Files** -> **Examples** -> **ESP32-Mail-Client-master** and choose one from examples
 
 
+## Limitation
+
+The library cannot be used in an **interrup** define by attacheInterrup(...), because of a limitation in FreeRTOS (ROM functions and  Wifi function not allowed in a interrupt callback, TBD: find source of that). If you need to do that, you can set a Flag, and use it in the main loop() function to send the email.
+
 
 ## Usages
 
