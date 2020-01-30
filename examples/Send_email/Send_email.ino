@@ -13,6 +13,7 @@
 
 
 //To use send Email for Gmail to port 465 (SSL), less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
+//To authenticate on Gmail SMTP server, you need to unlock Captcha https://accounts.google.com/DisplayUnlockCaptcha , and send an email with your device in the next 10 mn. Need to be done only one time (it's permanent after).
 
 //To receive Email for Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
 
