@@ -44,8 +44,11 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef WiFiClientSecureESP32_h
-#define WiFiClientSecureESP32_h
+#ifndef WiFiClientSecureESP32_H
+#define WiFiClientSecureESP32_H
+
+#ifdef ESP32
+
 #include "Arduino.h"
 #include "IPAddress.h"
 #include <WiFi.h>
@@ -135,4 +138,8 @@ private:
     using Print::write;
 };
 
-#endif /* _WIFICLIENT_H_ */
+#endif //ESP32
+
+#endif //WiFiClientSecureESP32_H
+
+

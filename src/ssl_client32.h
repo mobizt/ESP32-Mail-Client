@@ -29,6 +29,9 @@
 
 #ifndef SSL_CLIENT32_H
 #define SSL_CLIENT32_H
+
+#ifdef ESP32
+
 #include "mbedtls/platform.h"
 #include "mbedtls/net.h"
 #include "mbedtls/debug.h"
@@ -107,4 +110,7 @@ bool verify_ssl_fingerprint(sslclient_context32 *ssl_client, const char* fp, con
 bool verify_ssl_dn(sslclient_context32 *ssl_client, const char* domain_name);
 int starttlsHandshake(sslclient_context32 *ssl_client, int port);
 void ESP32SSLClientDebugInfo(PGM_P info, sslclient_context32 *ssl_client);
-#endif
+
+#endif //ESP32
+
+#endif //SSL_CLIENT32_H

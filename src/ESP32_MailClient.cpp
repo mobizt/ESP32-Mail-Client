@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.1.1
+ *Mail Client Arduino Library for ESP32, version 2.1.2
  * 
- * December 13, 2019
+ * April 10, 2020
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -28,6 +28,11 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+
+#ifndef ESP32_MailClient_CPP
+#define ESP32_MailClient_CPP
+
+#ifdef ESP32
 
 #include "ESP32_MailClient.h"
 
@@ -2343,7 +2348,6 @@ bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandT
   size_t payloadLength = 0;
   size_t outputLength;
 
-  bool payloadBegin = false;
   bool completeResp = false;
   bool validResponse = false;
   bool downloadReq = false;
@@ -2417,7 +2421,7 @@ bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandT
       if (validResponse && imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_TEXT && lfCount > 0)
       {
 
-        if (payloadLength > 0 && charCount < payloadLength - 1 && payloadBegin)
+        if (payloadLength > 0 && charCount < payloadLength - 1)
         {
 
           if (imapData._messageDataInfo[mailIndex][messageDataIndex]._transfer_encoding != ESP32_MAIL_STR_160)
@@ -2578,7 +2582,7 @@ bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandT
         tmp = lineBuf;
         std::transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
 
-        if (imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_MIME && lfCount > 0 && !payloadBegin)
+        if (imapCommandType == IMAP_COMMAND_TYPE::FETCH_BODY_MIME && lfCount > 0)
         {
 
           if (payloadLength > 0 && validResponse)
@@ -3228,9 +3232,6 @@ bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandT
               payloadLength = atoi(lineBuf.substr(p1 + 1, p2 - p1 - 1).c_str());
           }
         }
-
-        if (payloadLength > 0 && lfCount > 0 && tmp.length() == 0)
-          payloadBegin = true;
 
         lineBuf.clear();
         lfCount++;
@@ -4983,3 +4984,7 @@ void SendStatus::empty()
 }
 
 ESP32_MailClient MailClient = ESP32_MailClient();
+
+#endif //ESP32
+
+#endif //ESP32_MailClient_CPP

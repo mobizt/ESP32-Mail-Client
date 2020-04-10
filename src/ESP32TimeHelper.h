@@ -23,8 +23,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef ESP_TIME_HELPER_h
-#define ESP_TIME_HELPER_h
+#ifndef ESP32TimeHelper_H
+#define ESP32TimeHelper_H
+
+#ifdef ESP32
+
+
 #include <time.h>
 #include <Arduino.h>
 #include <WiFi.h>
@@ -64,4 +68,6 @@ private:
   const char *dow[20] = {"sunday", "monday", "tuesday", "wednesday", "thurseday", "friday", "saturday"};
 };
 
-#endif
+#endif //ESP32
+
+#endif //ESP32TimeHelper_H

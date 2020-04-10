@@ -43,6 +43,11 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#ifndef WiFiClientSecureESP32_CPP
+#define WiFiClientSecureESP32_CPP
+
+#ifdef ESP32
+
 #include "WiFiClientSecureESP32.h"
 #include <lwip/sockets.h>
 #include <lwip/netdb.h>
@@ -386,3 +391,7 @@ void WiFiClientSecureESP32::setDebugCB(DebugMsgCallback cb)
 {
     sslclient->_debugCallback = std::move(cb);
 }
+
+#endif //ESP32
+
+#endif //WiFiClientSecureESP32_CPP

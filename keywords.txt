@@ -162,9 +162,5 @@ info	KEYWORD2
 success	KEYWORD2
 ReadStatus	KEYWORD2
 status	KEYWORD2
-startAt	KEYWORD2
-endAt	KEYWORD2
-equalTo	KEYWORD2
-equalTo	KEYWORD2
 
 clockReady	KEYWORD3

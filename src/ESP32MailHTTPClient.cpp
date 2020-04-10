@@ -30,7 +30,10 @@
  *
 */
 
+#ifndef ESP32MailHTTPClient_CPP
+#define ESP32MailHTTPClient_CPP
 
+#ifdef ESP32
 
 #include "ESP32MailHTTPClient.h"
 
@@ -192,3 +195,6 @@ void ESP32MailHTTPClient::setDebugCallback(DebugMsgCallback cb)
     _debugCallback = std::move(cb);
 }
 
+#endif //ESP32
+
+#endif //ESP32MailHTTPClient_CPP

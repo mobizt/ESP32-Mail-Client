@@ -30,8 +30,10 @@
  *
 */
 
-#ifndef HTTP_CLIENT_ESP32EX_H_
-#define HTTP_CLIENT_ESP32EX_H_
+#ifndef ESP32MailHTTPClient_H
+#define ESP32MailHTTPClient_H
+
+#ifdef ESP32
 
 #include <Arduino.h>
 #include <HTTPClient.h>
@@ -100,8 +102,6 @@ protected:
   uint16_t _port = 0;
 };
 
+#endif //ESP32
 
-
-#endif /* ESP32MailHTTPClient_H_ */
-
-
+#endif //ESP32MailHTTPClient_H

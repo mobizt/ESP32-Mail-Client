@@ -23,6 +23,11 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#ifndef ESP32TimeHelper_CPP
+#define ESP32TimeHelper_CPP
+
+#ifdef ESP32
+
 #include "ESP32TimeHelper.h"
 
 ESP32TimeHelper::ESP32TimeHelper()
@@ -180,3 +185,7 @@ void ESP32TimeHelper::getTimeFromSec(int secCount, int &yrs, int &months, int &d
     min = _min;
     sec = secCount;
 }
+
+#endif //ESP32
+
+#endif //ESP32TimeHelper_CPP

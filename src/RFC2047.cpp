@@ -1,3 +1,8 @@
+#ifndef RFC2047_CPP
+#define RFC2047_CPP
+
+#ifdef ESP32
+
 #include "RFC2047.h"
 
 RFC2047::RFC2047(){}
@@ -230,4 +235,6 @@ char *RFC2047::safe_strdup (const char *s)
   return (p);
 }
 
+#endif //ESP32
 
+#endif //RFC2047_CPP

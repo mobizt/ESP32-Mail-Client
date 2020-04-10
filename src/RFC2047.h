@@ -2,6 +2,8 @@
 #ifndef RFC2047_H
 #define RFC2047_H
 
+#ifdef ESP32
+
 #include <Arduino.h>
 
 
@@ -63,4 +65,6 @@ class RFC2047{
 
 };
 
-#endif
+#endif //ESP32
+
+#endif //RFC2047_H

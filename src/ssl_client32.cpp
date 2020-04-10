@@ -31,6 +31,11 @@
 * Additions Copyright (C) 2017 Evandro Luis Copercini, Apache 2.0 License.
 */
 
+#ifndef SSL_CLIENT32_CPP
+#define SSL_CLIENT32_CPP
+
+#ifdef ESP32
+
 #include "Arduino.h"
 #include <esp32-hal-log.h>
 #include <lwip/err.h>
@@ -842,3 +847,7 @@ void ESP32SSLClientDebugInfo(PGM_P info, sslclient_context32 *ssl_client)
     ssl_client->_debugCallback(dbgInfo);
     delete[] dbgInfo;
 }
+
+#endif //ESP32
+
+#endif //SSL_CLIENT32_CPP
