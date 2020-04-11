@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.1.2
+ *Mail Client Arduino Library for ESP32, version 2.1.3
  * 
- * April 10, 2020
+ * April 11, 2020
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -4480,11 +4480,11 @@ attachmentData::~attachmentData()
   std::vector<std::string>().swap(_filename);
   std::vector<uint8_t>().swap(_id);
   std::vector<uint8_t>().swap(_type);
-  std::vector<uint16_t>().swap(_size);
+  std::vector<size_t>().swap(_size);
   std::vector<std::string>().swap(_mime_type);
 }
 
-void attachmentData::add(const String &fileName, const String &mimeType, uint8_t *data, uint16_t size)
+void attachmentData::add(const String &fileName, const String &mimeType, uint8_t *data, size_t size)
 {
   _filename.push_back(fileName.c_str());
   _mime_type.push_back(mimeType.c_str());
@@ -4524,7 +4524,7 @@ void attachmentData::free()
   std::vector<std::string>().swap(_filename);
   std::vector<uint8_t>().swap(_id);
   std::vector<uint8_t>().swap(_type);
-  std::vector<uint16_t>().swap(_size);
+  std::vector<size_t>().swap(_size);
   std::vector<std::string>().swap(_mime_type);
   _index = 0;
 }
@@ -4777,7 +4777,7 @@ String SMTPData::getBCC(uint8_t index)
   return _bcc[index].c_str();
 }
 
-void SMTPData::addAttachData(const String &fileName, const String &mimeType, uint8_t *data, uint16_t size)
+void SMTPData::addAttachData(const String &fileName, const String &mimeType, uint8_t *data, size_t size)
 {
   _attach.add(fileName, mimeType, data, size);
 }

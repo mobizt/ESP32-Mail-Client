@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.1.2
+ *Mail Client Arduino Library for ESP32, version 2.1.3
  * 
- * April 10, 2020
+ * April 11, 2020
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -592,10 +592,10 @@ protected:
   std::vector<std::string> _filename = std::vector<std::string>();
   std::vector<uint8_t> _id = std::vector<uint8_t>();
   std::vector<uint8_t> _type = std::vector<uint8_t>();
-  std::vector<uint16_t> _size = std::vector<uint16_t>();
+  std::vector<size_t> _size = std::vector<size_t>();
   std::vector<std::string> _mime_type = std::vector<std::string>();
 
-  void add(const String &fileName, const String &mimeType, uint8_t *data, uint16_t size);
+  void add(const String &fileName, const String &mimeType, uint8_t *data, size_t size);
   void remove(uint8_t index);
   void free();
   String getFileName(uint8_t index);
@@ -1672,7 +1672,7 @@ public:
     @param size - The data length in byte.
 
   */
-  void addAttachData(const String &fileName, const String &mimeType, uint8_t *data, uint16_t size);
+  void addAttachData(const String &fileName, const String &mimeType, uint8_t *data, size_t size);
 
   /*
 
