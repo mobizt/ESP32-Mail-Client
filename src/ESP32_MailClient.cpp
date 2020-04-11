@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.1.3
+ *Mail Client Arduino Library for ESP32, version 2.1.4
  * 
- * April 11, 2020
+ * April 12, 2020
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -98,39 +98,6 @@ bool ESP32_MailClient::readMail(IMAPData &imapData)
     ESP32MailDebug(String(imapData._port).c_str());
   }
 
-  if (WiFi.status() != WL_CONNECTED)
-    WiFi.reconnect();
-
-  //Try to reconnect WiFi if lost connection
-  if (WiFi.status() != WL_CONNECTED)
-  {
-    uint8_t tryCount = 0;
-    WiFi.reconnect();
-    while (WiFi.status() != WL_CONNECTED)
-    {
-      tryCount++;
-      delay(50);
-      if (tryCount > 60)
-        break;
-    }
-  }
-
-  //If WiFi is not connected, return false
-  if (WiFi.status() != WL_CONNECTED)
-  {
-    _imapStatus = MAIL_CLIENT_STATUS_WIFI_CONNECT_FAIL;
-
-    if (imapData._readCallback)
-    {
-      imapData._cbData._info = ESP32_MAIL_STR_53 + imapErrorReasonStr();
-      imapData._cbData._status = ESP32_MAIL_STR_52;
-      imapData._cbData._success = false;
-      imapData._readCallback(imapData._cbData);
-    }
-    if (imapData._debug)
-      ESP32MailDebugInfo(ESP32_MAIL_STR_226);
-    goto out;
-  }
 
   if (imapData._readCallback)
   {
@@ -977,40 +944,6 @@ bool ESP32_MailClient::_setFlag(IMAPData &imapData, int msgUID, const String &fl
     ESP32MailDebug(String(imapData._port).c_str());
   }
 
-  if (WiFi.status() != WL_CONNECTED)
-    WiFi.reconnect();
-
-  //Try to reconnect WiFi if lost connection
-  if (WiFi.status() != WL_CONNECTED)
-  {
-    uint8_t tryCount = 0;
-    WiFi.reconnect();
-    while (WiFi.status() != WL_CONNECTED)
-    {
-      tryCount++;
-      delay(50);
-      if (tryCount > 60)
-        break;
-    }
-  }
-
-  //If WiFi is not connected, return false
-  if (WiFi.status() != WL_CONNECTED)
-  {
-    _imapStatus = MAIL_CLIENT_STATUS_WIFI_CONNECT_FAIL;
-
-    if (imapData._readCallback)
-    {
-      imapData._cbData._info = ESP32_MAIL_STR_53 + imapErrorReasonStr();
-      imapData._cbData._status = ESP32_MAIL_STR_52;
-      imapData._cbData._success = false;
-      imapData._readCallback(imapData._cbData);
-    }
-    if (imapData._debug)
-      ESP32MailDebugInfo(ESP32_MAIL_STR_226);
-    goto out;
-  }
-
   if (imapData._readCallback)
   {
     imapData._cbData._info = ESP32_MAIL_STR_50;
@@ -1314,33 +1247,10 @@ out:
   return false;
 }
 
-bool ESP32_MailClient::reconnect()
-{
-  if (WiFi.status() != WL_CONNECTED)
-  {
-    if (_lastReconnectMillis == 0)
-    {
-      WiFi.reconnect();
-      _lastReconnectMillis = millis();
-    }
-    if (WiFi.status() != WL_CONNECTED)
-    {
-      if (millis() - _lastReconnectMillis > _reconnectTimeout)
-        _lastReconnectMillis = 0;
-      return false;
-    }
-    else
-    {
-      _lastReconnectMillis = 0;
-    }
-  }
-  return WiFi.status() == WL_CONNECTED;
-}
 
 bool ESP32_MailClient::smtpClientAvailable(SMTPData &smtpData, bool available)
 {
-  if (!reconnect())
-    return false;
+
   if (!smtpData._net->getStreamPtr())
     return false;
 
@@ -1352,8 +1262,7 @@ bool ESP32_MailClient::smtpClientAvailable(SMTPData &smtpData, bool available)
 
 bool ESP32_MailClient::imapClientAvailable(IMAPData &imapData, bool available)
 {
-  if (!reconnect())
-    return false;
+  
   if (!imapData._net->getStreamPtr())
     return false;
 
@@ -1443,38 +1352,6 @@ bool ESP32_MailClient::sendMail(SMTPData &smtpData)
     ESP32MailDebug(String(smtpData._port).c_str());
   }
 
-  if (WiFi.status() != WL_CONNECTED && !ETH.linkUp())
-    WiFi.reconnect();
-
-  //Try to reconnect WiFi if lost connection
-  if (WiFi.status() != WL_CONNECTED && !ETH.linkUp())
-  {
-    uint8_t tryCount = 0;
-    WiFi.reconnect();
-    while (WiFi.status() != WL_CONNECTED)
-    {
-      tryCount++;
-      delay(50);
-      if (tryCount > 60)
-        break;
-    }
-  }
-
-  //If WiFi is not connected, return false
-  if (WiFi.status() != WL_CONNECTED && !ETH.linkUp())
-  {
-    _smtpStatus = MAIL_CLIENT_STATUS_WIFI_CONNECT_FAIL;
-
-    if (smtpData._sendCallback)
-    {
-      smtpData._cbData._info = ESP32_MAIL_STR_53 + smtpErrorReasonStr();
-      smtpData._cbData._success = false;
-      smtpData._sendCallback(smtpData._cbData);
-    }
-    if (smtpData._debug)
-      ESP32MailDebugInfo(ESP32_MAIL_STR_237);
-    goto failed;
-  }
 
   if (smtpData._debug)
     smtpData._net->setDebugCallback(ESP32MailDebug);
@@ -3269,10 +3146,7 @@ bool ESP32_MailClient::waitIMAPResponse(IMAPData &imapData, uint8_t imapCommandT
         {
           imapData._error[mailIndex] = true;
           imapData._errorMsg[mailIndex].clear();
-          if (WiFi.status() != WL_CONNECTED)
-            imapData._errorMsg[mailIndex] = ESP32_MAIL_STR_94;
-          else
-            imapData._errorMsg[mailIndex] = ESP32_MAIL_STR_95;
+          imapData._errorMsg[mailIndex] = ESP32_MAIL_STR_95;
         }
       }
     }

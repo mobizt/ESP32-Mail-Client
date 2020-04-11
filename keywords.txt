@@ -31,9 +31,9 @@ addFlag KEYWORD2
 removeFlag  KEYWORD2
 
 
-setClock	KEYWORD2
-getUnixTime	KEYWORD2
-getTimestamp	KEYWORD2
+setClock    KEYWORD2
+getUnixTime KEYWORD2
+getTimestamp    KEYWORD2
 getYear	KEYWORD2
 getMonth	KEYWORD2
 getDay	KEYWORD2
@@ -57,18 +57,18 @@ setLogin	KEYWORD2
 setSTARTTLS KEYWORD2
 setDebug    KEYWORD2
 setFolder   KEYWORD2
-setMessageBufferSize	KEYWORD2
-setAttachmentSizeLimit	KEYWORD2
-setSearchCriteria	KEYWORD2
+setMessageBufferSize    KEYWORD2
+setAttachmentSizeLimit  KEYWORD2
+setSearchCriteria   KEYWORD2
 setSaveFilePath	KEYWORD2
-setFechUID	KEYWORD2
-setDownloadAttachment	KEYWORD2
-setHTMLMessage	KEYWORD2
-setTextMessage	KEYWORD2
-setSearchLimit	KEYWORD2
+setFechUID  KEYWORD2
+setDownloadAttachment   KEYWORD2
+setHTMLMessage  KEYWORD2
+setTextMessage  KEYWORD2
+setSearchLimit  KEYWORD2
 setRecentSort	KEYWORD2
 setReadCallback	KEYWORD2
-setDownloadReport	KEYWORD2
+setDownloadReport   KEYWORD2
 isHeaderOnly	KEYWORD2
 getFrom	KEYWORD2
 getFromCharset	KEYWORD2
