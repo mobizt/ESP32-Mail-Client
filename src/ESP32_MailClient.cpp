@@ -1,7 +1,7 @@
 /*
- *Mail Client Arduino Library for ESP32, version 2.1.4
+ *Mail Client Arduino Library for ESP32, version 2.1.5
  * 
- * April 12, 2020
+ * July 8, 2020
  * 
  * This library allows ESP32 to send Email with/without attachment and receive Email with/without attachment download through SMTP and IMAP servers. 
  * 
@@ -63,8 +63,6 @@ struct ESP32_MailClient::IMAP_HEADER_TYPE
   static const uint8_t ACCEPT_LANG = 8;
 };
 
-
-
 bool ESP32_MailClient::readMail(IMAPData &imapData)
 {
 
@@ -97,7 +95,6 @@ bool ESP32_MailClient::readMail(IMAPData &imapData)
     ESP32MailDebug(imapData._host.c_str());
     ESP32MailDebug(String(imapData._port).c_str());
   }
-
 
   if (imapData._readCallback)
   {
@@ -1247,7 +1244,6 @@ out:
   return false;
 }
 
-
 bool ESP32_MailClient::smtpClientAvailable(SMTPData &smtpData, bool available)
 {
 
@@ -1262,7 +1258,7 @@ bool ESP32_MailClient::smtpClientAvailable(SMTPData &smtpData, bool available)
 
 bool ESP32_MailClient::imapClientAvailable(IMAPData &imapData, bool available)
 {
-  
+
   if (!imapData._net->getStreamPtr())
     return false;
 
@@ -1352,7 +1348,6 @@ bool ESP32_MailClient::sendMail(SMTPData &smtpData)
     ESP32MailDebug(String(smtpData._port).c_str());
   }
 
-
   if (smtpData._debug)
     smtpData._net->setDebugCallback(ESP32MailDebug);
 
@@ -1425,6 +1420,13 @@ bool ESP32_MailClient::sendMail(SMTPData &smtpData)
   if (smtpData._debug)
     ESP32MailDebugInfo(ESP32_MAIL_STR_239);
 
+  smtpData._net->getStreamPtr()->println(ESP32_MAIL_STR_6);
+
+  if (waitSMTPResponse(smtpData) == 250)
+  {
+    goto accept;
+  }
+
   smtpData._net->getStreamPtr()->println(ESP32_MAIL_STR_5);
 
   if (waitSMTPResponse(smtpData) != 250)
@@ -1443,6 +1445,8 @@ bool ESP32_MailClient::sendMail(SMTPData &smtpData)
     }
     goto failed;
   }
+
+accept:
 
   if (smtpData._sendCallback)
   {
@@ -3477,7 +3481,7 @@ void ESP32_MailClient::send_base64_encode_mime_data(WiFiClient *client, const un
     dByte += 4;
     if (dByte == 76)
     {
-      if(byteAdd + 1 < chunkSize)
+      if (byteAdd + 1 < chunkSize)
       {
         buf[byteAdd++] = 0x0d;
         buf[byteAdd++] = 0x0a;
@@ -3553,7 +3557,7 @@ void ESP32_MailClient::send_base64_encode_mime_file(WiFiClient *client, File fil
       dByte += 4;
       if (dByte == 76)
       {
-        if(byteAdd + 1 < chunkSize)
+        if (byteAdd + 1 < chunkSize)
         {
           buf[byteAdd++] = 0x0d;
           buf[byteAdd++] = 0x0a;
