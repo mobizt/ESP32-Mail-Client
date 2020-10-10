@@ -22,23 +22,27 @@ This following devices were tested and work well.
  
 ## Features
 
-* Support Email sending with or without attachment via IMAP server.
+* Sending Email trough SMTP server
 
-* Support SSL/TLS and STARTTLS protocols.
+* Reading Email trough IMAP server
 
-* Working with SD card allows large file attachment supported or SPIFFS for small file size attachment.
+* Support attachment for Email sending
 
-* Support Email reading via search and fetch modes (with or without attachment downloads).
+* Support attachment download for Email reading.
 
-* Support large attachment download via SD card or SPIFFS for small file size attachment.
+* Support SSL/TLS and STARTTLS.
 
-* Message text and its header are able to download and save to SD card or SPIFFS.
+* Support custom header for Email sending 
 
-* Support Email message fetch and search via IMAP command as in RFC 3501 (depending on IMAP server implementation).
+* Support fetch and search commands (RFC 3501) for Email reading.
 
 * Support Ethernet.
 
-* Built-in Time function.
+* Email messages can be saved as file.
+
+* Support SD card and SPIFFS for file storage.
+
+* Built-in time function.
 
 
 
