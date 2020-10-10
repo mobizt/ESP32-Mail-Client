@@ -22,9 +22,9 @@ This following devices were tested and work well.
  
 ## Features
 
-* Sending Email trough SMTP server
+* Sending Email through SMTP server
 
-* Reading Email trough IMAP server
+* Reading Email through IMAP server
 
 * Support attachment for Email sending
 
