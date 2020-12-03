@@ -8,6 +8,14 @@ Copyright (c) 2019 K. Suwatchai (Mobizt).
 
 ![ESP32 Mail](/media/images/esp32-mail.png)
 
+# The new library is available
+
+The new library ESP Mail Client that supports ESP32 and ESP8266 and add much more options and feature is available here.
+https://github.com/mobizt/ESP-Mail-Client
+
+This ESP32 Mail Client library will set to obsolted and no further updates and development, plese install the new library instead.
+
+
 ## Tested Devices
 
 This following devices were tested and work well.
